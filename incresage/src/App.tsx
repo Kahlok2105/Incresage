@@ -9,19 +9,24 @@ import { CombatControls } from "./components/CombatControls";
 export default function App() {
   const {
     state,
-    addSpiritStones,
     tryBreakthrough,
     isMeditating,
     toggleMeditation,
     encounterMonster,
+    qiPerSecond,
+    usableQi,
+    totalQi,
   } = useGameLoop();
 
   return (
     <div className="app">
-      <h1>Cultivation Game</h1>
-      <Status state={state} tryBreakthrough={tryBreakthrough} />
-      <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />
+        <header className="status-panel">
+            <Status state={state} tryBreakthrough={tryBreakthrough} qiPerSecond={qiPerSecond} usableQi={usableQi} totalQi={totalQi} />
+        </header>
+        <main className="game-panel">
+            <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />
       <CombatControls encounterMonster={encounterMonster} />
+        </main>  
     </div>
   );
 }

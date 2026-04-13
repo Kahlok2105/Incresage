@@ -14,6 +14,8 @@ export interface Realm {
   stonesRequired: number;
   /** Multiplier applied to passive Qi gain while in this realm */
   qiGainMultiplier: number;
+  /** Maximum Qi capacity for this realm */
+  qiCap: number;
 }
 
 /**

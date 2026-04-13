@@ -5,7 +5,7 @@ import { REALMS, MONSTERS } from "../constants/gameData";
 /**
  * Core game‑loop hook.
  *
- * - Advances the game on a fixed tick (default 1 second).
+ * - Advances the game on a fixed tick (default 1 second).
  * - Applies passive Qi gain based on the current realm's `qiGainMultiplier`.
  * - Exposes helpers to manually add spirit stones (e.g., after combat) and to
  *   attempt a breakthrough when requirements are met.
@@ -21,6 +21,9 @@ export function useGameLoop(tickMs: number = 1_000) {
         spiritStones: 0,
         currentRealmIndex: 0,
         lastUpdate: Date.now(),
+        vitality: 0,
+        spirit: 0,
+        unlockedFeatures: [],
       };
 
   const [state, setState] = useState<PlayerState>(initialState);
@@ -32,14 +35,24 @@ export function useGameLoop(tickMs: number = 1_000) {
   // In a browser environment setInterval returns a numeric ID.
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Ref to keep isMeditating current for the tick function
+  const isMeditatingRef = useRef(isMeditating);
+
   // Helper: calculate passive Qi gain for the current tick.
   const computeQiGain = (currentState: PlayerState) => {
     const realm = REALMS[currentState.currentRealmIndex];
-    // Base gain of 1 Qi per tick, multiplied by the realm's multiplier.
+    // Base gain of 1 Qi per tick, multiplied by the realm's multiplier.
     const base = 1 * realm.qiGainMultiplier;
-    // If the player is meditating, apply an extra 2× multiplier.
-    return isMeditating ? base * 2 : base;
+    // If the player is meditating, apply an extra 2x multiplier.
+    return isMeditatingRef.current ? base * 2 : base;
   };
+
+  // Derived: current Qi per second (QPS)
+  const qiPerSecond = computeQiGain(state);
+
+  // Derived: usable Qi (current) and total Qi (cap)
+  const usableQi = state.qi;
+  const totalQi = REALMS[state.currentRealmIndex].qiCap;
 
   // Tick handler – updates Qi and timestamps.
   const tick = () => {
@@ -67,7 +80,6 @@ export function useGameLoop(tickMs: number = 1_000) {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("gameState", JSON.stringify(state));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   /** Add spirit stones – typically called after a successful combat encounter. */
@@ -92,13 +104,18 @@ export function useGameLoop(tickMs: number = 1_000) {
   };
 
   /** Toggle meditation on/off. */
-  const toggleMeditation = () => setMeditating((prev) => !prev);
+  const toggleMeditation = () => {
+    setMeditating((prev) => {
+      const newValue = !prev;
+      isMeditatingRef.current = newValue;
+      return newValue;
+    });
+  };
 
   /** Attempt to breakthrough to the next realm.
    * Returns true if the breakthrough succeeded, false otherwise.
    */
   const tryBreakthrough = (): boolean => {
-    const currentRealm = REALMS[state.currentRealmIndex];
     const nextRealm = REALMS[state.currentRealmIndex + 1];
     if (!nextRealm) return false; // Already at max realm
     const canBreak =
@@ -117,6 +134,6 @@ export function useGameLoop(tickMs: number = 1_000) {
     return false;
   };
 
-  return { state, addSpiritStones, tryBreakthrough, isMeditating, toggleMeditation, encounterMonster };
+  return { state, addSpiritStones, tryBreakthrough, isMeditating, toggleMeditation, encounterMonster, qiPerSecond, usableQi, totalQi };
 }
 

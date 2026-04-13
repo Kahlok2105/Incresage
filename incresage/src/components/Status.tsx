@@ -9,7 +9,10 @@ import { REALMS } from "../constants/gameData";
 export const Status: React.FC<{
   state: { qi: number; spiritStones: number; currentRealmIndex: number };
   tryBreakthrough: () => boolean;
-}> = ({ state, tryBreakthrough }) => {
+  qiPerSecond: number;
+  usableQi: number;
+  totalQi: number;
+}> = ({ state, tryBreakthrough, qiPerSecond, usableQi, totalQi }) => {
   const currentRealm: Realm = REALMS[state.currentRealmIndex];
   const nextRealm: Realm | undefined = REALMS[state.currentRealmIndex + 1];
 
@@ -20,7 +23,8 @@ export const Status: React.FC<{
   return (
     <div className="status">
       <h2>Current Realm: {currentRealm.name}</h2>
-      <p>Qi: {state.qi}</p>
+      <p>Qi/sec: {qiPerSecond.toFixed(1)}</p>
+      <p>Usable Qi / Total Qi: {usableQi.toFixed(0)} / {totalQi.toFixed(0)}</p>
       <p>Spirit Stones: {state.spiritStones}</p>
       {nextRealm && (
         <div className="breakthrough">
