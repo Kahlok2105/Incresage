@@ -7,6 +7,8 @@ import { CombatControls } from "./components/CombatControls";
 import { MonsterEncounter } from "./components/MonsterEncounter";
 import { AlchemyPanel } from "./components/AlchemyPanel";
 import { UnlockToast } from "./components/UnlockToast";
+import { NotificationContainer } from "./components/NotificationContainer";
+import { useNotifications } from "./hooks/useNotifications";
 import { useEffect, useState } from "react";
 
 /** Root component that wires the game loop and UI controls together. */
@@ -22,6 +24,9 @@ export default function App() {
     totalQi,
     resetGame,
   } = useGameLoop();
+
+  // Notification system
+  const { notifications, showSuccess, showFailure, dismissNotification } = useNotifications();
 
   // Track the most recently unlocked feature to show a toast notification.
   const [lastFeature, setLastFeature] = useState<string | null>(null);
@@ -42,7 +47,15 @@ export default function App() {
         <header className="status-panel">
             <Status
               state={state}
-              tryBreakthrough={tryBreakthrough}
+              tryBreakthrough={() => {
+                const result = tryBreakthrough();
+                if (result.success) {
+                  showSuccess("🎉 Breakthrough Successful! Welcome to the next realm!");
+                } else {
+                  showFailure("⚠️ Breakthrough Failed! You lost 50% of your Qi.");
+                }
+                return result;
+              }}
               qiPerSecond={qiPerSecond}
               usableQi={usableQi}
               totalQi={totalQi}
@@ -60,7 +73,12 @@ export default function App() {
         {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
         {/* Unlock toast notification */}
         <UnlockToast feature={lastFeature} />
-        </main>  
+        </main>
+        {/* Global notification container */}
+        <NotificationContainer
+          notifications={notifications}
+          onDismiss={dismissNotification}
+        />
     </div>
   );
 }

@@ -18,10 +18,21 @@ export const Status: React.FC<{
   const currentRealm: Realm = REALMS[state.currentRealmIndex];
   const nextRealm: Realm | undefined = REALMS[state.currentRealmIndex + 1];
 
-// Calculate the dynamic chance for display
-  const currentChance = nextRealm 
-    ? (nextRealm.baseSuccessRate * (state.qi / currentRealm.qiCap) * 100).toFixed(1)
-    : 0;
+  const currentChance = nextRealm
+    ? (nextRealm.baseSuccessRate * Math.min(1, state.qi / nextRealm.qiRequired) * 100).toFixed(1)
+    : "0.0";
+
+  const canAttempt = nextRealm
+    ? state.qi >= nextRealm.qiRequired / 2 && state.spiritStones >= nextRealm.stonesRequired
+    : false;
+
+  const attemptLabel = nextRealm
+    ? canAttempt
+      ? "Attempt Breakthrough"
+      : state.spiritStones < nextRealm.stonesRequired
+      ? "Need More Spirit Stones"
+      : "Accumulate More Qi"
+    : "No Further Realms";
 
   return (
     <div className="status">
@@ -29,15 +40,12 @@ export const Status: React.FC<{
       <p>Qi/sec: {qiPerSecond.toFixed(1)}</p>
       <p>Usable Qi / Total Qi: {usableQi.toFixed(0)} / {totalQi.toFixed(0)}</p>
       <p>Spirit Stones: {state.spiritStones}</p>
-        {nextRealm && (
+      {nextRealm && (
         <div className="breakthrough">
           <h3>Next Realm: {nextRealm.name}</h3>
-          <p>Success Chance: **{currentChance}%**</p>
-          <button 
-            disabled={state.qi < nextRealm.qiRequired} 
-            onClick={tryBreakthrough}
-          >
-            {state.qi >= nextRealm.qiRequired ? "Attempt Breakthrough" : "Accumulate More Qi"}
+          <p>Success Chance: <strong>{currentChance}%</strong></p>
+          <button disabled={!canAttempt} onClick={tryBreakthrough}>
+            {attemptLabel}
           </button>
           <p className="hint">Failure will result in Qi loss!</p>
         </div>

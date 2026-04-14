@@ -152,11 +152,8 @@ export function useGameLoop(tickMs: number = 1_000) {
 const calculateBreakthroughChance = () => {
   const nextRealm = REALMS[state.currentRealmIndex + 1];
   if (!nextRealm) return 0;
-  
-  // Progress ratio (Current Qi / Max Qi of the CURRENT realm)
-  const currentMaxQi = REALMS[state.currentRealmIndex].qiCap;
-  const ratio = Math.min(1, state.qi / currentMaxQi);
-  
+
+  const ratio = Math.min(1, state.qi / nextRealm.qiRequired);
   return nextRealm.baseSuccessRate * ratio;
 };
 

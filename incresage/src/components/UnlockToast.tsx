@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 
-/**
- * Simple toast that appears for a short duration when a new feature is unlocked.
- * It expects a `feature` name and will display a friendly message.
- */
+
+
+
+
 export const UnlockToast: React.FC<{ feature: string | null }> = ({ feature }) => {
   const [visible, setVisible] = useState(false);
 

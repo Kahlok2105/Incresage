@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Notification System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+        }
+        .success {
+            color: #2e7d32;
+        }
+        .instruction {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+            border: 1px solid #90caf9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎉 Notification System Test</h1>
+
+        <div class="instruction">
+            <strong>How to Test the Notification System:</strong>
+            <ol>
+                <li>Open the Incresage application in your browser at <a href="http://localhost:5176/" target="_blank">http://localhost:5176/</a></li>
+                <li>Play the game to accumulate Qi and Spirit Stones</li>
+                <li>When you have enough resources, click the "Attempt Breakthrough" button</li>
+                <li>You should see a notification appear in the top right corner showing either:</li>
+                <ul>
+                    <li><strong>Success</strong>: "🎉 Breakthrough Successful! Welcome to the next realm!" (green notification)</li>
+                    <li><strong>Failure</strong>: "⚠️ Breakthrough Failed! You lost 50% of your Qi." (red notification)</li>
+                </ul>
+                <li>The notification should automatically disappear after 4 seconds</li>
+            </ol>
+        </div>
+
+        <div class="test-results">
+            <h3>✅ Implementation Summary</h3>
+            <p>The notification system has been successfully implemented with the following features:</p>
+            <ul>
+                <li>🎨 <strong>Generic Notification Component</strong> - Reusable for all notification types</li>
+                <li>📦 <strong>Notification Management System</strong> - Hook-based state management</li>
+                <li>🎯 <strong>Breakthrough Integration</strong> - Success and failure notifications</li>
+                <li>📏 <strong>Proper Positioning</strong> - Top right corner as requested</li>
+                <li>⏱️ <strong>Auto-dismiss</strong> - Notifications disappear after 4 seconds</li>
+                <li>🎨 <strong>Visual Feedback</strong> - Different colors for success (green) and failure (red)</li>
+                <li>🔄 <strong>Progress Indicator</strong> - Shows time remaining with progress bar</li>
+                <li>📱 <strong>Responsive Design</strong> - Works on all screen sizes</li>
+            </ul>
+        </div>
+
+        <div class="test-results">
+            <h3>🔧 Technical Details</h3>
+            <p>Files created/modified:</p>
+            <ul>
+                <li><code>src/components/Notification.tsx</code> - Generic notification component</li>
+                <li><code>src/components/NotificationContainer.tsx</code> - Container for multiple notifications</li>
+                <li><code>src/hooks/useNotifications.ts</code> - Notification management hook</li>
+                <li><code>src/App.tsx</code> - Integrated notification system</li>
+                <li><code>src/App.css</code> - Added notification styling</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
