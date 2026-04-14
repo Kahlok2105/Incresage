@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Breakthrough Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .debug-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+        }
+        .error {
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+        }
+        .info {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔍 Breakthrough Debug Analysis</h1>
+
+        <div class="section">
+            <h3>✅ Issues Found and Fixed</h3>
+            <ul>
+                <li><strong>Issue 1: Qi not being reduced on failure</strong> - FIXED
+                    <ul>
+                        <li>The problem was in the <code>canAttempt</code> condition in <code>useGameLoop.ts</code></li>
+                        <li>It required full Qi (<code>state.qi >= nextRealm.qiRequired</code>) but the UI allowed attempts with 50% Qi</li>
+                        <li>This caused the function to return early, skipping the state update (including Qi reduction)</li>
+                        <li><strong>Fix</strong>: Changed condition to <code>state.qi >= nextRealm.qiRequired / 2</code> to match UI</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>🔍 Issue 2 Analysis: Breakthrough Chance</h3>
+            <ul>
+                <li><strong>Expected Behavior</strong>:
+                    <ul>
+                        <li>Base success rates: Mortal→Qi Condensation (90%), Qi Condensation→Foundation (80%)</li>
+                        <li>Actual chance = baseSuccessRate × (currentQi / requiredQi)</li>
+                        <li>If you have 50% Qi, your chance is 50% of the base rate</li>
+                    </ul>
+                </li>
+                <li><strong>Possible Explanations</strong>:
+                    <ul>
+                        <li><strong>UI shows maximum possible chance</strong>: The UI might show the chance when you have full Qi (e.g., 80%), but your actual chance with 50% Qi would be 40%</li>
+                        <li><strong>Bad luck streak</strong>: Even with 50% chance, there's a (0.5)^20 = 0.00095% chance of failing 20 times in a row</li>
+                        <li><strong>Qi level lower than expected</strong>: If you have less than 50% Qi, your chance would be even lower</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="section info">
+            <h3>📊 Chance Calculation Examples</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 8px; text-align: left;">Realm Transition</th>
+                    <th style="padding: 8px; text-align: left;">Base Rate</th>
+                    <th style="padding: 8px; text-align: left;">Qi Level</th>
+                    <th style="padding: 8px; text-align: left;">Actual Chance</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Mortal → Qi Condensation</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">90%</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">100% Qi</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">90%</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Mortal → Qi Condensation</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">90%</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">50% Qi</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">45%</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Qi Condensation → Foundation</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">80%</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">100% Qi</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">80%</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Qi Condensation → Foundation</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">80%</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">50% Qi</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">40%</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>🎯 How to Verify the Fixes</h3>
+            <ol>
+                <li><strong>Test Qi reduction on failure</strong>:
+                    <ul>
+                        <li>Accumulate some Qi (e.g., 500/1000)</li>
+                        <li>Attempt a breakthrough and fail</li>
+                        <li>Check if your Qi is reduced to 250 (50% of 500)</li>
+                        <li>You should see a red failure notification</li>
+                    </ul>
+                </li>
+                <li><strong>Check your actual chance</strong>:
+                    <ul>
+                        <li>Look at your current Qi vs required Qi</li>
+                        <li>Calculate: baseRate × (currentQi / requiredQi)</li>
+                        <li>Example: 80% base × 50% Qi = 40% actual chance</li>
+                    </ul>
+                </li>
+                <li><strong>Test with full Qi</strong>:
+                    <ul>
+                        <li>Fill your Qi to maximum</li>
+                        <li>Attempt breakthrough - you should have the full base rate chance</li>
+                        <li>On success, you should see a green success notification</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="section info">
+            <h3>💡 Additional Improvements Made</h3>
+            <ul>
+                <li><strong>Notification System</strong>: Added visual feedback for breakthrough results</li>
+                <li><strong>Consistency</strong>: Aligned attempt requirements between UI and logic</li>
+                <li><strong>User Experience</strong>: Clear success/failure messages with appropriate colors</li>
+                <li><strong>Reusability</strong>: Generic notification system for future game events</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

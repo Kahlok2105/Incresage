@@ -23,6 +23,7 @@ export default function App() {
     usableQi,
     totalQi,
     resetGame,
+    addTestQi,
   } = useGameLoop();
 
   // Notification system
@@ -60,6 +61,7 @@ export default function App() {
               usableQi={usableQi}
               totalQi={totalQi}
               resetGame={resetGame}
+              addTestQi={addTestQi}
             />
         </header>
         <main className="game-panel">

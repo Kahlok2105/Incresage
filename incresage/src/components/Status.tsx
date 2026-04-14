@@ -14,7 +14,8 @@ export const Status: React.FC<{
   usableQi: number;
   totalQi: number;
   resetGame: () => void;
-}> = ({ state, tryBreakthrough, qiPerSecond, usableQi, totalQi, resetGame }) => {
+  addTestQi?: (percentage: number) => void;
+}> = ({ state, tryBreakthrough, qiPerSecond, usableQi, totalQi, resetGame, addTestQi }) => {
   const currentRealm: Realm = REALMS[state.currentRealmIndex];
   const nextRealm: Realm | undefined = REALMS[state.currentRealmIndex + 1];
 
@@ -51,12 +52,20 @@ export const Status: React.FC<{
         </div>
       )}
       <div className="debug-controls" style={{ marginTop: '20px', opacity: 0.6 }}>
-        <button 
-          onClick={resetGame} 
+        <button
+          onClick={resetGame}
           style={{ background: '#ff4444', fontSize: '0.8rem', padding: '8px 12px' }}
         >
           Hard Reset Data
         </button>
+        {addTestQi && (
+          <button
+            onClick={() => addTestQi(10)}
+            style={{ background: '#4CAF50', fontSize: '0.8rem', padding: '8px 12px', marginLeft: '8px' }}
+          >
+            +10% Qi (Test)
+          </button>
+        )}
       </div>
     </div>
   );

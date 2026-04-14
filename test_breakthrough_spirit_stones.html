@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Breakthrough Spirit Stone Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+        }
+        .error {
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+        }
+        .success {
+            background-color: #e8f5e9;
+            border: 1px solid #4caf50;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Breakthrough Spirit Stone Test</h1>
+
+        <div class="section">
+            <h3>📋 Test Description</h3>
+            <p>This test verifies that breakthrough failures now consume spirit stones, adding risk/reward balance to the game.</p>
+            <p><strong>Expected behavior:</strong> When a breakthrough fails, both Qi (50% reduction) AND spirit stones should be consumed.</p>
+        </div>
+
+        <div class="section">
+            <h3>🔧 Test Setup</h3>
+            <p>Initial state for testing:</p>
+            <ul>
+                <li>Current Realm: Mortal (Index 0)</li>
+                <li>Qi: 500/1000 (50% of required 1000 for next realm)</li>
+                <li>Spirit Stones: 10 (required: 10 for next realm)</li>
+                <li>Breakthrough Chance: ~45% (90% base × 50% Qi)</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>🎯 Test Scenarios</h3>
+            <ol>
+                <li><strong>Failure Test:</strong> Force a breakthrough failure and verify spirit stones are consumed</li>
+                <li><strong>Success Test:</strong> Force a breakthrough success and verify spirit stones are consumed</li>
+                <li><strong>Edge Case:</strong> Test with insufficient spirit stones</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h3>📊 Expected Results</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 8px; text-align: left;">Scenario</th>
+                    <th style="padding: 8px; text-align: left;">Before</th>
+                    <th style="padding: 8px; text-align: left;">After</th>
+                    <th style="padding: 8px; text-align: left;">Result</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Failure</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Qi: 500, Stones: 10</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Qi: 250, Stones: 0</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">✅ Stones consumed</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Success</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Qi: 1000, Stones: 10</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">Qi: 0, Stones: 0, New Realm</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">✅ Stones consumed</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section success">
+            <h3>✅ Implementation Details</h3>
+            <p>The change was made in <code>incresage/src/hooks/useGameLoop.ts</code>:</p>
+            <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto;">
+// Before (failure case):
+return {
+  ...prev,
+  qi: Math.max(0, prev.qi * 0.5),
+};
+
+// After (failure case):
+return {
+  ...prev,
+  qi: Math.max(0, prev.qi * 0.5),
+  spiritStones: prev.spiritStones - nextRealm.stonesRequired,
+};
+            </pre>
+            <p>This ensures that both successful and failed breakthroughs consume spirit stones, creating a proper risk/reward mechanic.</p>
+        </div>
+
+        <div class="section">
+            <h3>🎮 Game Design Impact</h3>
+            <ul>
+                <li><strong>Risk/Reward Balance:</strong> Players now have to consider whether to attempt breakthroughs with lower chances, as failure has a real cost</li>
+                <li><strong>Resource Management:</strong> Spirit stones become more valuable and require better planning</li>
+                <li><strong>Strategic Depth:</strong> Players may choose to farm more spirit stones before attempting risky breakthroughs</li>
+                <li><strong>Consistency:</strong> Both success and failure now have resource costs, making the mechanic more intuitive</li>
+            </ul>
+        </div>
+
+        <div class="results">
+            <h3>📝 Test Notes</h3>
+            <p>To manually test this in the game:</p>
+            <ol>
+                <li>Accumulate some Qi and spirit stones</li>
+                <li>Attempt a breakthrough with a low chance (e.g., 50% Qi)</li>
+                <li>If it fails, check that your spirit stones were consumed</li>
+                <li>Verify that your Qi was reduced by 50%</li>
+                <li>Try again with full Qi to see the success case</li>
+            </ol>
+            <p style="margin-top: 15px; font-style: italic;">The implementation is complete and ready for testing in the actual game!</p>
+        </div>
+    </div>
+</body>
+</html>

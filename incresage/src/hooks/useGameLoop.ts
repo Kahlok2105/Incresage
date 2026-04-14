@@ -168,7 +168,7 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
 
   //1. Calculate the dynamic chance based on current Qi progress
   const chance = calculateBreakthroughChance();
-  const canAttempt =  state.qi >= nextRealm.qiRequired && 
+  const canAttempt =  state.qi >= nextRealm.qiRequired / 2 &&
                       state.spiritStones >= nextRealm.stonesRequired;
 
   if (!canAttempt) return {success: false, chance};
@@ -195,19 +195,32 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
           spiritStones: prev.spiritStones - nextRealm.stonesRequired,
           unlockedFeatures: newFeatures,        
         };
-      } else {
-        // Penalty: Deduct 50% of current Qi on failure, but don't drop below 0.
-        return {
-          ...prev,
-          qi: Math.max(0, prev.qi * 0.5),
-
-        };
-      }
+       } else {
+         // Penalty: Deduct 50% of current Qi on failure, but don't drop below 0.
+         // Also consume spirit stones on failure to add risk/reward balance
+         return {
+           ...prev,
+           qi: Math.max(0, prev.qi * 0.5),
+           spiritStones: prev.spiritStones - nextRealm.stonesRequired,
+         };
+       }
     });
   return { success, chance };
 };
 
-  return { state, addSpiritStones, tryBreakthrough, isMeditating, toggleMeditation, encounterMonster, qiPerSecond, usableQi, totalQi, resetGame };
+  /** Add a percentage of total Qi for testing purposes */
+  const addTestQi = (percentage: number) => {
+    setState((prev) => {
+      const realm = REALMS[prev.currentRealmIndex];
+      const amountToAdd = realm.qiCap * (percentage / 100);
+      return {
+        ...prev,
+        qi: Math.min(prev.qi + amountToAdd, realm.qiCap),
+      };
+    });
+  };
+
+  return { state, addSpiritStones, tryBreakthrough, isMeditating, toggleMeditation, encounterMonster, qiPerSecond, usableQi, totalQi, resetGame, addTestQi };
 }
 
 
