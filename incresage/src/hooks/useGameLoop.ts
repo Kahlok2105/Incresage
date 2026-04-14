@@ -164,33 +164,50 @@ const calculateBreakthroughChance = () => {
 
 
 const tryBreakthrough = (): { success: boolean; chance: number } => {
+  // const currentRealm = REALMS[state.currentRealmIndex]; // No longer needed for logic
   const nextRealm = REALMS[state.currentRealmIndex + 1];
+  
   if (!nextRealm) return { success: false, chance: 0 };
 
+  //1. Calculate the dynamic chance based on current Qi progress
   const chance = calculateBreakthroughChance();
-  const canAttempt = state.qi >= nextRealm.qiRequired && state.spiritStones >= nextRealm.stonesRequired;
+  const canAttempt =  state.qi >= nextRealm.qiRequired && 
+                      state.spiritStones >= nextRealm.stonesRequired;
 
-  if (canAttempt) {
+  if (!canAttempt) return {success: false, chance};
+  
+  //2. Roll the Dice on the breakthrough
     const roll = Math.random();
     const success = roll < chance;
 
-    if (success) {
-      setState((prev) => ({
-        ...prev,
-        currentRealmIndex: prev.currentRealmIndex + 1,
-        qi: 0, // Reset Qi on breakthrough
-        spiritStones: prev.spiritStones - nextRealm.stonesRequired,
-      }));
-    } else {
-      // Penalty: Lose 50% of required Qi on failure
-      setState((prev) => ({
-        ...prev,
-        qi: Math.max(0, prev.qi - nextRealm.qiRequired * 0.5),
-      }));
-    }
-    return { success, chance };
-  }
-  return { success: false, chance };
+    setState((prev) => {
+      if(success) {
+
+        const nextIndex = prev.currentRealmIndex + 1;
+        const newFeatures = [...prev.unlockedFeatures];
+
+         // Progression Logic:
+         //   - Unlock "monster" (combat encounters) after the first breakthrough (index >= 1)
+         //   - Unlock "alchemy" after the second breakthrough (index >= 2)
+         if (nextIndex >= 1 && !newFeatures.includes("monster")) newFeatures.push("monster");
+         if (nextIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
+        return {
+          ...prev,
+          currentRealmIndex: nextIndex,
+          qi: 0,
+          spiritStones: prev.spiritStones - nextRealm.stonesRequired,
+          unlockedFeatures: newFeatures,        
+        };
+      } else {
+        // Penalty: Deduct 50% of current Qi on failure, but don't drop below 0.
+        return {
+          ...prev,
+          qi: Math.max(0, prev.qi * 0.5),
+
+        };
+      }
+    });
+  return { success, chance };
 };
 
   return { state, addSpiritStones, tryBreakthrough, isMeditating, toggleMeditation, encounterMonster, qiPerSecond, usableQi, totalQi, resetGame };

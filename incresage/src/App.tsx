@@ -1,9 +1,13 @@
-import React from "react";
+// React import removed; JSX runtime handles it automatically.
 import "./App.css";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { Status } from "./components/Status";
 import { MeditationControls } from "./components/MeditationControls";
 import { CombatControls } from "./components/CombatControls";
+import { MonsterEncounter } from "./components/MonsterEncounter";
+import { AlchemyPanel } from "./components/AlchemyPanel";
+import { UnlockToast } from "./components/UnlockToast";
+import { useEffect, useState } from "react";
 
 /** Root component that wires the game loop and UI controls together. */
 export default function App() {
@@ -19,6 +23,20 @@ export default function App() {
     resetGame,
   } = useGameLoop();
 
+  // Track the most recently unlocked feature to show a toast notification.
+  const [lastFeature, setLastFeature] = useState<string | null>(null);
+  useEffect(() => {
+    // When unlockedFeatures length increases, capture the newly added feature.
+    const features = state.unlockedFeatures;
+    if (features.length) {
+      const stored = (lastFeature && features.includes(lastFeature)) ? lastFeature : null;
+      if (!stored) {
+        // Assume the last element is the newest unlock.
+        setLastFeature(features[features.length - 1]);
+      }
+    }
+  }, [state.unlockedFeatures]);
+
   return (
     <div className="app">
         <header className="status-panel">
@@ -32,8 +50,16 @@ export default function App() {
             />
         </header>
         <main className="game-panel">
-            <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />
-      <CombatControls encounterMonster={encounterMonster} />
+        <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />
+        <CombatControls encounterMonster={encounterMonster} />
+        {/* Render monster encounter UI when unlocked */}
+        {state.unlockedFeatures.includes("monster") && (
+          <MonsterEncounter encounterMonster={encounterMonster} />
+        )}
+        {/* Render alchemy UI when unlocked */}
+        {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
+        {/* Unlock toast notification */}
+        <UnlockToast feature={lastFeature} />
         </main>  
     </div>
   );

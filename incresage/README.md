@@ -9,6 +9,7 @@ This project started from the official **React + TypeScript + Vite** starter tem
 * **Combat** – Players can encounter random monsters; successful fights award Spirit Stones.
 * **Breakthrough** – When the required resources are met, players can advance to the next realm, consuming the resources.
 * **Persistence** – Game state is saved to `localStorage` so progress survives page reloads.
+* **New Features** – After the first breakthrough the **monster** UI unlocks, allowing combat encounters via the `MonsterEncounter` panel. After the second breakthrough the **alchemy** UI unlocks, showing the `AlchemyPanel`. Feature unlocks are announced with a brief toast notification.
 
 The core game loop lives in `src/hooks/useGameLoop.ts`, UI components are in `src/components/`, and the entry point is `src/App.tsx`.
 

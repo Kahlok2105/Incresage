@@ -86,6 +86,9 @@ Reference for the hook implementation: [`incresage/src/hooks/useGameLoop.ts:1`]
 * **Status** (`src/components/Status.tsx`) – Shows current realm, Qi, spirit stones and a breakthrough button.
 * **MeditationControls** (`src/components/MeditationControls.tsx`) – Button to start/stop meditation.
 * **CombatControls** (`src/components/CombatControls.tsx`) – Button to trigger a monster encounter and display the result.
+* **MonsterEncounter** (`src/components/MonsterEncounter.tsx`) – New panel that appears once the "monster" feature is unlocked (after the first breakthrough). Allows the player to challenge a random monster.
+* **AlchemyPanel** (`src/components/AlchemyPanel.tsx`) – New panel that appears once the "alchemy" feature is unlocked (after the second breakthrough). Placeholder for future alchemy mechanics.
+* **UnlockToast** (`src/components/UnlockToast.tsx`) – Small toast notification that briefly shows the name of a newly unlocked feature.
 
 All components receive the necessary callbacks from `useGameLoop` via the root `App` component (`src/App.tsx`).
 
@@ -99,10 +102,16 @@ The root component imports the hook and UI components, wires the callbacks toget
 const { state, tryBreakthrough, isMeditating, toggleMeditation, encounterMonster } = useGameLoop();
 return (
   <div className="app">
-    <h1>Cultivation Game</h1>
-    <Status state={state} tryBreakthrough={tryBreakthrough} />
-    <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />
-    <CombatControls encounterMonster={encounterMonster} />
+    <header className="status-panel">
+      <Status state={state} tryBreakthrough={tryBreakthrough} qiPerSecond={qiPerSecond} usableQi={usableQi} totalQi={totalQi} resetGame={resetGame} />
+    </header>
+    <main className="game-panel">
+      <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />
+      <CombatControls encounterMonster={encounterMonster} />
+      {state.unlockedFeatures.includes("monster") && <MonsterEncounter encounterMonster={encounterMonster} />}
+      {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
+      <UnlockToast feature={lastFeature} />
+    </main>
   </div>
 );
 ```
