@@ -8,17 +8,20 @@ import { REALMS } from "../constants/gameData";
  */
 export const Status: React.FC<{
   state: { qi: number; spiritStones: number; currentRealmIndex: number };
-  tryBreakthrough: () => boolean;
+  // Updated to reflect actual return shape from useGameLoop
+  tryBreakthrough: () => { success: boolean; chance: number };
   qiPerSecond: number;
   usableQi: number;
   totalQi: number;
-}> = ({ state, tryBreakthrough, qiPerSecond, usableQi, totalQi }) => {
+  resetGame: () => void;
+}> = ({ state, tryBreakthrough, qiPerSecond, usableQi, totalQi, resetGame }) => {
   const currentRealm: Realm = REALMS[state.currentRealmIndex];
   const nextRealm: Realm | undefined = REALMS[state.currentRealmIndex + 1];
 
-  const canBreak = nextRealm &&
-    state.qi >= nextRealm.qiRequired &&
-    state.spiritStones >= nextRealm.stonesRequired;
+// Calculate the dynamic chance for display
+  const currentChance = nextRealm 
+    ? (nextRealm.baseSuccessRate * (state.qi / currentRealm.qiCap) * 100).toFixed(1)
+    : 0;
 
   return (
     <div className="status">
@@ -26,15 +29,27 @@ export const Status: React.FC<{
       <p>Qi/sec: {qiPerSecond.toFixed(1)}</p>
       <p>Usable Qi / Total Qi: {usableQi.toFixed(0)} / {totalQi.toFixed(0)}</p>
       <p>Spirit Stones: {state.spiritStones}</p>
-      {nextRealm && (
+        {nextRealm && (
         <div className="breakthrough">
           <h3>Next Realm: {nextRealm.name}</h3>
-          <p>Requires {nextRealm.qiRequired} Qi and {nextRealm.stonesRequired} Stones</p>
-          <button disabled={!canBreak} onClick={tryBreakthrough}>
-            {canBreak ? "Breakthrough!" : "Not enough resources"}
+          <p>Success Chance: **{currentChance}%**</p>
+          <button 
+            disabled={state.qi < nextRealm.qiRequired} 
+            onClick={tryBreakthrough}
+          >
+            {state.qi >= nextRealm.qiRequired ? "Attempt Breakthrough" : "Accumulate More Qi"}
           </button>
+          <p className="hint">Failure will result in Qi loss!</p>
         </div>
       )}
+      <div className="debug-controls" style={{ marginTop: '20px', opacity: 0.6 }}>
+        <button 
+          onClick={resetGame} 
+          style={{ background: '#ff4444', fontSize: '0.8rem', padding: '8px 12px' }}
+        >
+          Hard Reset Data
+        </button>
+      </div>
     </div>
   );
 };

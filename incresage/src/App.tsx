@@ -16,12 +16,20 @@ export default function App() {
     qiPerSecond,
     usableQi,
     totalQi,
+    resetGame,
   } = useGameLoop();
 
   return (
     <div className="app">
         <header className="status-panel">
-            <Status state={state} tryBreakthrough={tryBreakthrough} qiPerSecond={qiPerSecond} usableQi={usableQi} totalQi={totalQi} />
+            <Status
+              state={state}
+              tryBreakthrough={tryBreakthrough}
+              qiPerSecond={qiPerSecond}
+              usableQi={usableQi}
+              totalQi={totalQi}
+              resetGame={resetGame}
+            />
         </header>
         <main className="game-panel">
             <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />

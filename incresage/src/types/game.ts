@@ -16,6 +16,7 @@ export interface Realm {
   qiGainMultiplier: number;
   /** Maximum Qi capacity for this realm */
   qiCap: number;
+  baseSuccessRate: number; // Base success rate for breakthroughs to this realm (0 to 1)
 }
 
 /**
@@ -30,5 +31,8 @@ export interface PlayerState {
   currentRealmIndex: number;
   /** Timestamp of the last game‑loop tick (ms since epoch) */
   lastUpdate: number;
+  vitality: number;
+  spirit: number;
+  unlockedFeatures: string[]; // e.g., ["combat", "meditation"]
 }
 

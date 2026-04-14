@@ -5,9 +5,9 @@ import type { Realm } from "../types/game";
  * – the player's `currentRealmIndex` points to an element in this list.
  */
 export const REALMS: Realm[] = [
-  { id: "mortal", name: "Mortal", qiRequired: 100, stonesRequired: 0, qiGainMultiplier: 1, qiCap: 100 },
-  { id: "qi_condensation", name: "Qi Condensation", qiRequired: 1_000, stonesRequired: 50, qiGainMultiplier: 2, qiCap: 1_000 },
-  { id: "foundation", name: "Foundation Establishment", qiRequired: 10_000, stonesRequired: 500, qiGainMultiplier: 5, qiCap: 10_000 },
+  { id: "mortal", name: "Mortal", qiRequired: 100, stonesRequired: 0, qiGainMultiplier: 1, qiCap: 1000, baseSuccessRate: 0.9 },
+  { id: "qi_condensation", name: "Qi Condensation", qiRequired: 1_000, stonesRequired: 100, qiGainMultiplier: 2, qiCap: 10_000, baseSuccessRate: 0.8 },
+  { id: "foundation", name: "Foundation Establishment", qiRequired: 10_000, stonesRequired: 500, qiGainMultiplier: 5, qiCap: 100_000, baseSuccessRate: 0.7 },
   // Additional realms can be added here following the same shape
 ];
 

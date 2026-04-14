@@ -300,3 +300,35 @@ button:disabled {
     padding: 24px;
   }
 }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 6, 13, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-content {
+  background: var(--bg);
+  padding: 40px;
+  border-radius: 28px;
+  border: 1px solid var(--accent-border);
+  text-align: center;
+  box-shadow: var(--shadow);
+  max-width: 400px;
+}
+
+.gain-display {
+  margin: 24px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.accent-text {
+  color: var(--accent);
+  margin-left: 8px;
+}
