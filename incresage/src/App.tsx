@@ -2,7 +2,7 @@
 import "./App.css";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { Status } from "./components/Status";
-import { MeditationControls } from "./components/MeditationControls";
+import { MeditationPanel } from "./components/MeditationPanel";
 import { CombatControls } from "./components/CombatControls";
 import { MonsterEncounter } from "./components/MonsterEncounter";
 import { AlchemyPanel } from "./components/AlchemyPanel";
@@ -24,6 +24,11 @@ export default function App() {
     totalQi,
     resetGame,
     addTestQi,
+    setActiveMeditation,
+    levelUpMeditation,
+    getCurrentMeditationStats,
+    meditationTypes,
+    activeMeditationId
   } = useGameLoop();
 
   // Notification system
@@ -65,7 +70,13 @@ export default function App() {
             />
         </header>
         <main className="game-panel">
-        <MeditationControls isMeditating={isMeditating} toggleMeditation={toggleMeditation} />
+        <MeditationPanel
+          meditationTypes={meditationTypes}
+          activeMeditationId={activeMeditationId}
+          setActiveMeditation={setActiveMeditation}
+          levelUpMeditation={levelUpMeditation}
+          getCurrentMeditationStats={getCurrentMeditationStats}
+        />
         <CombatControls encounterMonster={encounterMonster} />
         {/* Render monster encounter UI when unlocked */}
         {state.unlockedFeatures.includes("monster") && (

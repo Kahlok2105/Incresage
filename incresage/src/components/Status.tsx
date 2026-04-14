@@ -7,7 +7,7 @@ import { REALMS } from "../constants/gameData";
  * Provides a button to attempt a breakthrough when requirements are met.
  */
 export const Status: React.FC<{
-  state: { qi: number; spiritStones: number; currentRealmIndex: number };
+  state: { qi: number; spiritStones: number; currentRealmIndex: number; curiosity: number; vitality: number };
   // Updated to reflect actual return shape from useGameLoop
   tryBreakthrough: () => { success: boolean; chance: number };
   qiPerSecond: number;
@@ -16,7 +16,10 @@ export const Status: React.FC<{
   resetGame: () => void;
   addTestQi?: (percentage: number) => void;
 }> = ({ state, tryBreakthrough, qiPerSecond, usableQi, totalQi, resetGame, addTestQi }) => {
-  const currentRealm: Realm = REALMS[state.currentRealmIndex];
+  // Calculate stat caps based on current realm
+  const currentRealm = REALMS[state.currentRealmIndex];
+  const curiosityCap = currentRealm.qiCap * 0.5; // 50% of Qi cap
+  const tenacityCap = currentRealm.qiCap * 0.3; // 30% of Qi cap
   const nextRealm: Realm | undefined = REALMS[state.currentRealmIndex + 1];
 
   const currentChance = nextRealm
@@ -38,9 +41,10 @@ export const Status: React.FC<{
   return (
     <div className="status">
       <h2>Current Realm: {currentRealm.name}</h2>
-      <p>Qi/sec: {qiPerSecond.toFixed(1)}</p>
-      <p>Usable Qi / Total Qi: {usableQi.toFixed(0)} / {totalQi.toFixed(0)}</p>
+      <p>Qi: {usableQi.toFixed(0)} / {totalQi.toFixed(0)}</p>
       <p>Spirit Stones: {state.spiritStones}</p>
+      <p>Curiosity: {(state.curiosity || 0).toFixed(1)} / {curiosityCap.toFixed(0)}</p>
+      <p>Tenacity: {(state.vitality || 0).toFixed(1)} / {tenacityCap.toFixed(0)}</p>
       {nextRealm && (
         <div className="breakthrough">
           <h3>Next Realm: {nextRealm.name}</h3>

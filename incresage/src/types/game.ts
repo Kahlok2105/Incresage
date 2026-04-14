@@ -20,6 +20,30 @@ export interface Realm {
 }
 
 /**
+ * Meditation type definition.
+ */
+export interface MeditationType {
+  /** Unique identifier for the meditation type */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Base curiosity gain per second */
+  baseCuriosity: number;
+  /** Base tenacity gain per second */
+  baseTenacity: number;
+  /** Base qi gain per second */
+  baseQi: number;
+  /** Current level (1-100) */
+  level: number;
+  /** Current experience points */
+  currentExp: number;
+  /** Experience required for next level */
+  expToNextLevel: number;
+  /** Maximum level */
+  maxLevel: number;
+}
+
+/**
  * Player's mutable state.
  */
 export interface PlayerState {
@@ -33,6 +57,11 @@ export interface PlayerState {
   lastUpdate: number;
   vitality: number;
   spirit: number;
+  curiosity: number;
   unlockedFeatures: string[]; // e.g., ["combat", "meditation"]
+  /** Available meditation types */
+  meditationTypes: MeditationType[];
+  /** Currently active meditation type ID, or null if none */
+  activeMeditationId: string | null;
 }
 

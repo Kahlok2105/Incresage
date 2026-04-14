@@ -32,3 +32,42 @@ export const MONSTERS: Monster[] = [
   { id: "celestial_beast", name: "Celestial Beast", stoneReward: 100, difficulty: 5 },
 ];
 
+/**
+ * Starting meditation types available to players.
+ */
+export const MEDITATION_TYPES = [
+  {
+    id: "explore_surroundings",
+    name: "Explore Surroundings",
+    baseCuriosity: 1,
+    baseTenacity: 0,
+    baseQi: 1,
+    level: 1,
+    currentExp: 0,
+    expToNextLevel: 100,
+    maxLevel: 100
+  },
+  {
+    id: "explore_self",
+    name: "Explore Self",
+    baseCuriosity: 0,
+    baseTenacity: 1,
+    baseQi: 1,
+    level: 1,
+    currentExp: 0,
+    expToNextLevel: 100,
+    maxLevel: 100
+  },
+  {
+    id: "focus_mind",
+    name: "Focus on Mind",
+    baseCuriosity: 0,
+    baseTenacity: 0,
+    baseQi: 3,
+    level: 1,
+    currentExp: 0,
+    expToNextLevel: 100,
+    maxLevel: 100
+  }
+];
+

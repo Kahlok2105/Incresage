@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { PlayerState } from "../types/game";
-import { REALMS, MONSTERS } from "../constants/gameData";
+import type { PlayerState, MeditationType } from "../types/game";
+import { REALMS, MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
 
 /**
  * Core game‑loop hook.
@@ -18,7 +18,10 @@ const DEFAULT_STATE: PlayerState = {
   lastUpdate: Date.now(),
   vitality: 0,
   spirit: 0,
+  curiosity: 0,
   unlockedFeatures: [],
+  meditationTypes: [...MEDITATION_TYPES],
+  activeMeditationId: null,
 };
 
 export function useGameLoop(tickMs: number = 1_000) {
@@ -34,7 +37,10 @@ export function useGameLoop(tickMs: number = 1_000) {
         lastUpdate: Date.now(),
         vitality: 0,
         spirit: 0,
+        curiosity: 0,
         unlockedFeatures: [],
+        meditationTypes: [...MEDITATION_TYPES],
+        activeMeditationId: null,
       };
 
   const [state, setState] = useState<PlayerState>(initialState);
@@ -56,6 +62,71 @@ export function useGameLoop(tickMs: number = 1_000) {
       setMeditating(false);
       isMeditatingRef.current = false;
     }
+  };
+
+  // Helper: calculate meditation stat multiplier based on level
+  const calculateMeditationMultiplier = (level: number) => {
+    return 1 + Math.floor(level / 10);
+  };
+
+  // Helper: get active meditation stats
+  const getActiveMeditationStats = (currentState: PlayerState) => {
+    if (!currentState.activeMeditationId) {
+      return { curiosity: 0, tenacity: 0, qi: 0 };
+    }
+
+    const activeMeditation = currentState.meditationTypes.find(
+      (m) => m.id === currentState.activeMeditationId
+    );
+
+    if (!activeMeditation) {
+      return { curiosity: 0, tenacity: 0, qi: 0 };
+    }
+
+    // (Base × Level) × Multiplier
+    const multiplier = calculateMeditationMultiplier(activeMeditation.level);
+
+    return {
+      curiosity: activeMeditation.baseCuriosity * activeMeditation.level * multiplier,
+      tenacity: activeMeditation.baseTenacity * activeMeditation.level * multiplier,
+      qi: activeMeditation.baseQi * activeMeditation.level * multiplier,
+    };
+  };
+
+  // Helper: calculate experience required for next level
+  const calculateExpRequired = (level: number) => {
+    // Base exp: 100, doubles every 5 levels
+    const expMultiplier = Math.pow(2, Math.floor((level - 1) / 5));
+    return 100 * expMultiplier;
+  };
+
+  // Helper: gain experience for active meditation
+  const gainMeditationExperience = (prevState: PlayerState, deltaTimeSeconds: number) => {
+    if (!prevState.activeMeditationId) return prevState.meditationTypes;
+
+    return prevState.meditationTypes.map(meditation => {
+      if (meditation.id !== prevState.activeMeditationId) return meditation;
+
+      // Gain 1 exp per second of active meditation
+      const expGained = deltaTimeSeconds;
+      let newExp = meditation.currentExp + expGained;
+      let newLevel = meditation.level;
+      let newExpToNextLevel = meditation.expToNextLevel;
+
+      // Check for level ups
+      while (newExp >= newExpToNextLevel && newLevel < meditation.maxLevel) {
+        newExp -= newExpToNextLevel;
+        newLevel += 1;
+        newExpToNextLevel = calculateExpRequired(newLevel);
+      }
+
+      return {
+        ...meditation,
+        level: newLevel,
+        currentExp: newExp,
+        expToNextLevel: newExpToNextLevel
+      };
+    });
   };
 
   // Helper: calculate passive Qi gain for the current tick.
@@ -80,18 +151,29 @@ export function useGameLoop(tickMs: number = 1_000) {
         const now = Date.now();
         //1. Calculate how much seconds have passed
         const deltaTimeSeconds = (now - prev.lastUpdate) / 1000;
-        
-        //2. Calculate Qi gain based on current realm stats and time elapsed
 
+        //2. Calculate base Qi gain from realm
         const realm = REALMS[prev.currentRealmIndex];
-        const baseGain = 1 * realm.qiGainMultiplier
+        const baseGain = 1 * realm.qiGainMultiplier;
         const multiplier = isMeditatingRef.current ? 2 : 1;
-        const totalGain = baseGain * multiplier * deltaTimeSeconds;
-       
-        //3. Update Qi while capped by realm's limit.
+        const realmQiGain = baseGain * multiplier * deltaTimeSeconds;
+
+        //3. Calculate meditation stats
+        const meditationStats = getActiveMeditationStats(prev);
+        const meditationQiGain = meditationStats.qi * deltaTimeSeconds;
+        const curiosityGain = meditationStats.curiosity * deltaTimeSeconds;
+        const tenacityGain = meditationStats.tenacity * deltaTimeSeconds;
+
+        //4. Update meditation experience
+        const updatedMeditationTypes = gainMeditationExperience(prev, deltaTimeSeconds);
+
+        //5. Update all stats while capped by realm's limit.
         return {
             ...prev,
-            qi: Math.min(prev.qi + totalGain, realm.qiCap), // Cap Qi at realm limit
+            qi: Math.min(prev.qi + realmQiGain + meditationQiGain, realm.qiCap), // Cap Qi at realm limit
+            curiosity: prev.curiosity + curiosityGain,
+            vitality: prev.vitality + tenacityGain, // Using vitality field for tenacity
+            meditationTypes: updatedMeditationTypes,
             lastUpdate: now,
         };
     });
@@ -132,6 +214,36 @@ export function useGameLoop(tickMs: number = 1_000) {
       addSpiritStones(monster.stoneReward);
     }
     return { monster, success };
+  };
+
+  /** Set active meditation type */
+  const setActiveMeditation = (meditationId: string | null) => {
+    setState((prev) => ({
+      ...prev,
+      activeMeditationId: meditationId,
+    }));
+  };
+
+  /** Level up a meditation type */
+  const levelUpMeditation = (meditationId: string) => {
+    setState((prev) => {
+      const updatedMeditationTypes = prev.meditationTypes.map((meditation) => {
+        if (meditation.id === meditationId && meditation.level < meditation.maxLevel) {
+          return { ...meditation, level: meditation.level + 1 };
+        }
+        return meditation;
+      });
+
+      return {
+        ...prev,
+        meditationTypes: updatedMeditationTypes,
+      };
+    });
+  };
+
+  /** Get current meditation stats */
+  const getCurrentMeditationStats = () => {
+    return getActiveMeditationStats(state);
   };
 
   /** Toggle meditation on/off. */
@@ -220,7 +332,24 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     });
   };
 
-  return { state, addSpiritStones, tryBreakthrough, isMeditating, toggleMeditation, encounterMonster, qiPerSecond, usableQi, totalQi, resetGame, addTestQi };
+  return {
+    state,
+    addSpiritStones,
+    tryBreakthrough,
+    isMeditating,
+    toggleMeditation,
+    encounterMonster,
+    qiPerSecond,
+    usableQi,
+    totalQi,
+    resetGame,
+    addTestQi,
+    setActiveMeditation,
+    levelUpMeditation,
+    getCurrentMeditationStats,
+    meditationTypes: state.meditationTypes,
+    activeMeditationId: state.activeMeditationId
+  };
 }
 
 

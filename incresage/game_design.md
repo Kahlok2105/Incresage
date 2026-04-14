@@ -25,6 +25,25 @@ export interface PlayerState {
   spiritStones: number;      // Accumulated spirit stones
   currentRealmIndex: number; // Index into the REALMS array
   lastUpdate: number;        // Timestamp of the last tick
+  vitality: number;          // Vitality stat from meditation
+  spirit: number;            // Spirit stat (future use)
+  curiosity: number;         // Curiosity stat from meditation
+  unlockedFeatures: string[]; // Unlocked game features
+  meditationTypes: MeditationType[]; // Available meditation techniques
+  activeMeditationId: string | null; // Currently active meditation
+}
+```
+
+### Meditation Type (`src/types/game.ts`)
+```typescript
+export interface MeditationType {
+  id: string;               // Unique identifier
+  name: string;             // Display name
+  baseCuriosity: number;    // Base curiosity gain per second
+  baseVitality: number;     // Base vitality gain per second
+  baseQi: number;           // Base qi gain per second
+  level: number;            // Current level (1-100)
+  maxLevel: number;         // Maximum level
 }
 ```
 Reference: [`incresage/src/types/game.ts:30`]
@@ -60,9 +79,45 @@ Reference: [`incresage/src/constants/gameData.ts:23`]
 * Every `tickMs` (default 1000 ms) the hook calls `computeQiGain` and updates `state.qi`.
 * `computeQiGain` multiplies a base gain of **1 Qi** by the current realm’s `qiGainMultiplier` and, if `isMeditating` is true, applies an additional **×2** factor.
 
-### Meditation
-* `isMeditating` is a boolean state toggled via `toggleMeditation` (exposed to the UI).
-* When true, Qi gain per tick is doubled.
+### Meditation System
+* **Meditation Types**: Three starting meditation techniques with different stat focuses:
+  - **Explore Surroundings**: Generates Curiosity +1/s and Qi +1/s (base)
+  - **Explore Self**: Generates Tenacity +1/s and Qi +1/s (base)
+  - **Focus on Mind**: Generates Qi +3/s (base)
+
+* **Experience System**:
+  - Players gain 1 experience point per second for active meditation
+  - Experience required doubles every 5 levels: `expRequired = 100 * 2^Math.floor((level - 1) / 5)`
+  - Example: Level 1 = 100 exp, Level 6 = 200 exp, Level 11 = 400 exp, etc.
+  - Automatic level-up when experience threshold is reached
+
+* **Stat Calculation Formula**:
+  - **Base Stats**: Each meditation has base values (e.g., Explore Surroundings: 1 Curiosity, 1 Qi)
+  - **Level Multiplier**: Stats increase linearly with level (Base × Level)
+  - **Progression Multiplier**: Increments every 10 levels (1×, 2×, 3×...) using `multiplier = 1 + Math.floor(level / 10)`
+  - **Final Formula**: `(Base × Level) × Multiplier`
+
+  **Examples for "Explore Surroundings" (Base: 1 Curiosity, 1 Qi):**
+  - **Level 1**: `(1 × 1) × 1 = 1 Curiosity/s, 1 Qi/s`
+  - **Level 2**: `(1 × 2) × 1 = 2 Curiosity/s, 2 Qi/s`
+  - **Level 5**: `(1 × 5) × 1 = 5 Curiosity/s, 5 Qi/s`
+  - **Level 10**: `(1 × 10) × 2 = 20 Curiosity/s, 20 Qi/s` (multiplier becomes 2)
+  - **Level 20**: `(1 × 20) × 3 = 60 Curiosity/s, 60 Qi/s` (multiplier becomes 3)
+  - **Level 30**: `(1 × 30) × 4 = 120 Curiosity/s, 120 Qi/s` (multiplier becomes 4)
+
+* **Activation**:
+  - Players can activate one meditation at a time via `setActiveMeditation()`
+  - Active meditation stats are calculated and applied every tick
+  - Stats include Qi, Curiosity, and Tenacity gains
+
+* **Stat Caps**:
+  - Curiosity cap: 50% of current realm's Qi capacity
+  - Tenacity cap: 30% of current realm's Qi capacity
+  - Displayed as "Current/Max" in Status panel
+
+* **Legacy Meditation**:
+  - `isMeditating` is a boolean state toggled via `toggleMeditation` (exposed to the UI).
+  - When true, Qi gain per tick is doubled (additive with meditation system).
 
 ### Combat Encounter (`encounterMonster`)
 * Picks a random monster from `MONSTERS`.
@@ -83,8 +138,9 @@ Reference for the hook implementation: [`incresage/src/hooks/useGameLoop.ts:1`]
 
 ## 4. UI Components
 
-* **Status** (`src/components/Status.tsx`) – Shows current realm, Qi, spirit stones and a breakthrough button.
-* **MeditationControls** (`src/components/MeditationControls.tsx`) – Button to start/stop meditation.
+* **Status** (`src/components/Status.tsx`) – Shows current realm, Qi, spirit stones, curiosity, vitality and a breakthrough button.
+* **MeditationPanel** (`src/components/MeditationPanel.tsx`) – Comprehensive meditation system with multiple meditation types, activation controls, leveling, and stat displays.
+* **MeditationControls** (`src/components/MeditationControls.tsx`) – Legacy button to start/stop basic meditation (kept for backwards compatibility).
 * **CombatControls** (`src/components/CombatControls.tsx`) – Button to trigger a monster encounter and display the result.
 * **MonsterEncounter** (`src/components/MonsterEncounter.tsx`) – New panel that appears once the "monster" feature is unlocked (after the first breakthrough). Allows the player to challenge a random monster.
 * **AlchemyPanel** (`src/components/AlchemyPanel.tsx`) – New panel that appears once the "alchemy" feature is unlocked (after the second breakthrough). Placeholder for future alchemy mechanics.
@@ -123,13 +179,15 @@ Reference: [`incresage/src/App.tsx:1`]
 
 | File | Purpose |
 |------|---------|
-| `src/types/game.ts` | Data models for realms and player state |
-| `src/constants/gameData.ts` | Realm list and monster pool |
-| `src/hooks/useGameLoop.ts` | Game loop, meditation, combat, breakthrough, persistence |
-| `src/components/Status.tsx` | UI for displaying player status and breakthrough |
-| `src/components/MeditationControls.tsx` | UI for toggling meditation |
+| `src/types/game.ts` | Data models for realms, player state, and meditation types |
+| `src/constants/gameData.ts` | Realm list, monster pool, and meditation type definitions |
+| `src/hooks/useGameLoop.ts` | Game loop, meditation system, combat, breakthrough, persistence |
+| `src/components/Status.tsx` | UI for displaying player status, stats, and breakthrough |
+| `src/components/MeditationPanel.tsx` | Comprehensive meditation system UI with multiple types and leveling |
+| `src/components/MeditationControls.tsx` | Legacy meditation toggle (backwards compatibility) |
 | `src/components/CombatControls.tsx` | UI for combat encounters |
 | `src/App.tsx` | Root component that composes everything |
+| `src/App.css` | Styling for all components including meditation panel |
 
 With these files the project now runs a functional idle‑cultivation game that can be extended with more realms, monsters, and UI polish.
 
