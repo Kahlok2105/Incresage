@@ -3,21 +3,26 @@
 /**
  * Represents a cultivation realm.
  */
-export interface Realm {
+export interface CultivationRealm {
   /** Unique identifier for the realm */
   id: string;
   /** Human readable name */
   name: string;
+  /** Stage within realm: 0 = Early, 1 = Middle, 2 = Late */
+  stage: number;
+  /** Display name including stage */
+  displayName: string;
   /** Qi required to reach this realm */
   qiRequired: number;
-  /** Spirit stones required for breakthrough */
-  stonesRequired: number;
-  /** Multiplier applied to passive Qi gain while in this realm */
-  qiGainMultiplier: number;
   /** Maximum Qi capacity for this realm */
   qiCap: number;
-  baseSuccessRate: number; // Base success rate for breakthroughs to this realm (0 to 1)
+  /** Multiplier applied to passive gain while in this realm */
+  gainMultiplier: number;
+  /** Base success rate for breakthroughs to this realm (0 to 1) */
+  baseSuccessRate: number;
 }
+
+export type CultivationType = 'qi' | 'body';
 
 /**
  * Meditation type definition.
@@ -51,26 +56,42 @@ export interface MeditationType {
     qi: number;
     /** Accumulated spirit stones */
     spiritStones: number;
-    /** Index into the REALMS array indicating the current realm */
-    currentRealmIndex: number;
+    
+    /** Qi Cultivation progress */
+    currentQiRealmIndex: number;
+    currentQiStage: number;
+    
+    /** Body Cultivation progress */
+    currentBodyRealmIndex: number;
+    currentBodyStage: number;
+    
     /** Timestamp of the last game‑loop tick (ms since epoch) */
     lastUpdate: number;
     /** Timestamp when the user was last active (for away time tracking) */
     lastActive: number;
+    
     /** Health points for combat */
     vitality: number;
     /** Mana/energy points for combat abilities */
     spirit: number;
     /** Maximum vitality capacity */
     vitalityCap: number;
+    
     curiosity: number;
     /** Mental fortitude for meditation */
     tenacity: number;
-    /** Maximum curiosity capacity (half of current realm's qiCap) */
+    
+    /** Maximum curiosity capacity */
     curiosityCap: number;
-    /** Maximum tenacity capacity (half of current realm's qiCap) */
+    /** Maximum tenacity capacity */
     tenacityCap: number;
-    unlockedFeatures: string[]; // e.g., ["combat", "meditation"]
+    
+    /** Current lifespan in years */
+    lifespan: number;
+    /** Maximum lifespan based on cultivation */
+    maxLifespan: number;
+    
+    unlockedFeatures: string[]; // e.g., ["combat", "meditation", "bodyCultivation"]
     /** Available meditation types */
     meditationTypes: MeditationType[];
     /** Currently active meditation type ID, or null if none */

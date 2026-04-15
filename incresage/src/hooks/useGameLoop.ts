@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerState } from "../types/game";
-import { REALMS, MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
+import { MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
+import { QI_REALMS, BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
+import { calculateLifespan, calculateQiCap } from "../utils/gameMath";
 
 /**
  * Core game‑loop hook.
@@ -14,16 +16,29 @@ import { REALMS, MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
   const DEFAULT_STATE: PlayerState = {
     qi: 0,
     spiritStones: 0,
-    currentRealmIndex: 0,
+    
+    currentQiRealmIndex: 0,
+    currentQiStage: 0,
+    
+    currentBodyRealmIndex: 0,
+    currentBodyStage: 0,
+    
     lastUpdate: Date.now(),
     lastActive: Date.now(),
+    
     vitality: 0,
     spirit: 0,
     vitalityCap: 500, // Default to Mortal realm cap (1000/2)
+    
     curiosity: 0,
     tenacity: 0,
-    curiosityCap: 500, // Default to Mortal realm cap (1000/2)
-    tenacityCap: 500, // Default to Mortal realm cap (1000/2)
+    
+    curiosityCap: 500,
+    tenacityCap: 500,
+    
+    lifespan: 100,
+    maxLifespan: 100,
+    
     unlockedFeatures: [],
     meditationTypes: [...MEDITATION_TYPES],
     activeMeditationId: null,
@@ -36,31 +51,63 @@ export function useGameLoop(tickMs: number = 1_000) {
   const initialState: PlayerState = persisted
     ? (() => {
         const parsed = JSON.parse(persisted);
+        
         // Migrate old vitality field to tenacity for backward compatibility
         const migratedTenacity = parsed.tenacity || parsed.vitality || 0;
+        
+        // Migrate old single realm system to new dual cultivation system
+        const oldRealmIndex = parsed.currentRealmIndex || 0;
+        
+        // Calculate lifespan based on highest attained realm
+        const maxLifespan = calculateLifespan(oldRealmIndex);
+        
         return {
           ...parsed,
           lastActive: parsed.lastActive || Date.now(),
-          vitality: parsed.vitality || 0, // Keep vitality as HP
-          tenacity: migratedTenacity, // Use migrated value for tenacity
-          vitalityCap: parsed.vitalityCap || REALMS[parsed.currentRealmIndex || 0].qiCap / 2,
-          curiosityCap: parsed.curiosityCap || REALMS[parsed.currentRealmIndex || 0].qiCap / 2,
-          tenacityCap: parsed.tenacityCap || REALMS[parsed.currentRealmIndex || 0].qiCap / 2
+          
+          // Migrate old realm index to new dual system
+          currentQiRealmIndex: parsed.currentQiRealmIndex ?? oldRealmIndex,
+          currentQiStage: parsed.currentQiStage ?? 0,
+          currentBodyRealmIndex: parsed.currentBodyRealmIndex ?? 0,
+          currentBodyStage: parsed.currentBodyStage ?? 0,
+          
+          vitality: parsed.vitality || 0,
+          tenacity: migratedTenacity,
+          
+          // Calculate proper stat caps
+          vitalityCap: parsed.vitalityCap || calculateQiCap(oldRealmIndex, 0) / 2,
+          curiosityCap: parsed.curiosityCap || calculateQiCap(oldRealmIndex, 0) / 2,
+          tenacityCap: parsed.tenacityCap || calculateQiCap(oldRealmIndex, 0) / 2,
+          
+          lifespan: parsed.lifespan ?? maxLifespan,
+          maxLifespan: parsed.maxLifespan ?? maxLifespan
         };
       })()
     : {
         qi: 0,
         spiritStones: 0,
-        currentRealmIndex: 0,
+        
+        currentQiRealmIndex: 0,
+        currentQiStage: 0,
+        currentBodyRealmIndex: 0,
+        currentBodyStage: 0,
+        
         lastUpdate: Date.now(),
         lastActive: Date.now(),
+        
         vitality: 0,
         spirit: 0,
-        vitalityCap: REALMS[0].qiCap / 2,
+        vitalityCap: QI_REALMS[0].qiCap / 2,
+        
         curiosity: 0,
         tenacity: 0,
-        curiosityCap: REALMS[0].qiCap / 2,
-        tenacityCap: REALMS[0].qiCap / 2,
+        
+        curiosityCap: QI_REALMS[0].qiCap / 2,
+        tenacityCap: QI_REALMS[0].qiCap / 2,
+        
+        lifespan: 100,
+        maxLifespan: 100,
+        
         unlockedFeatures: [],
         meditationTypes: [...MEDITATION_TYPES],
         activeMeditationId: null,
@@ -93,12 +140,12 @@ export function useGameLoop(tickMs: number = 1_000) {
   };
 
   // Helper: calculate stat caps based on current realm
-  const calculateStatCaps = (realmIndex: number) => {
-    const realm = REALMS[realmIndex];
+  const calculateStatCaps = (realmIndex: number, stage: number = 0) => {
+    const qiCap = calculateQiCap(realmIndex, stage);
     return {
-      vitalityCap: realm.qiCap / 2,
-      curiosityCap: realm.qiCap / 2,
-      tenacityCap: realm.qiCap / 2
+      vitalityCap: qiCap / 2,
+      curiosityCap: qiCap / 2,
+      tenacityCap: qiCap / 2
     };
   };
 
@@ -164,9 +211,9 @@ export function useGameLoop(tickMs: number = 1_000) {
 
   // Helper: calculate passive Qi gain for the current tick.
   const computeQiGain = (currentState: PlayerState) => {
-    const realm = REALMS[currentState.currentRealmIndex];
+    const qiRealm = getCurrentRealm(QI_REALMS, currentState.currentQiRealmIndex, currentState.currentQiStage);
     // Base gain of 1 Qi per tick, multiplied by the realm's multiplier.
-    const base = 1 * realm.qiGainMultiplier;
+    const base = 1 * qiRealm.gainMultiplier;
     // If the player is meditating, apply an extra 2x multiplier.
     return isMeditatingRef.current ? base * 2 : base;
   };
@@ -176,7 +223,8 @@ export function useGameLoop(tickMs: number = 1_000) {
 
   // Derived: usable Qi (current) and total Qi (cap)
   const usableQi = state.qi;
-  const totalQi = REALMS[state.currentRealmIndex].qiCap;
+  const currentQiRealm = getCurrentRealm(QI_REALMS, state.currentQiRealmIndex, state.currentQiStage);
+  const totalQi = currentQiRealm.qiCap;
 
   // Tick handler – updates Qi and timestamps.
   const tick = () => {
@@ -186,8 +234,8 @@ export function useGameLoop(tickMs: number = 1_000) {
         const deltaTimeSeconds = (now - prev.lastUpdate) / 1000;
 
         //2. Calculate base Qi gain from realm
-        const realm = REALMS[prev.currentRealmIndex];
-        const baseGain = 1 * realm.qiGainMultiplier;
+        const qiRealm = getCurrentRealm(QI_REALMS, prev.currentQiRealmIndex, prev.currentQiStage);
+        const baseGain = 1 * qiRealm.gainMultiplier;
         const multiplier = isMeditatingRef.current ? 2 : 1;
         const realmQiGain = baseGain * multiplier * deltaTimeSeconds;
 
@@ -203,7 +251,7 @@ export function useGameLoop(tickMs: number = 1_000) {
         //5. Update all stats while capped by realm's limit.
         return {
             ...prev,
-            qi: Math.min(prev.qi + realmQiGain + meditationQiGain, realm.qiCap), // Cap Qi at realm limit
+            qi: Math.min(prev.qi + realmQiGain + meditationQiGain, qiRealm.qiCap), // Cap Qi at realm limit
             curiosity: Math.min(prev.curiosity + curiosityGain, prev.curiosityCap), // Cap curiosity
             tenacity: Math.min(prev.tenacity + tenacityGain, prev.tenacityCap), // Cap tenacity
             meditationTypes: updatedMeditationTypes,
@@ -230,14 +278,18 @@ export function useGameLoop(tickMs: number = 1_000) {
 
   // Update stat caps when realm changes
   useEffect(() => {
-    const { vitalityCap, curiosityCap, tenacityCap } = calculateStatCaps(state.currentRealmIndex);
+    const { vitalityCap, curiosityCap, tenacityCap } = calculateStatCaps(state.currentQiRealmIndex, state.currentQiStage);
+    const newMaxLifespan = calculateLifespan(state.currentQiRealmIndex);
+    
     setState(prev => ({
       ...prev,
       vitalityCap,
       curiosityCap,
-      tenacityCap
+      tenacityCap,
+      maxLifespan: newMaxLifespan,
+      lifespan: Math.min(prev.lifespan, newMaxLifespan)
     }));
-  }, [state.currentRealmIndex]);
+  }, [state.currentQiRealmIndex, state.currentQiStage]);
 
   // Track visibility changes for away time calculation
   const [welcomeData, setWelcomeData] = useState<{
@@ -252,8 +304,8 @@ export function useGameLoop(tickMs: number = 1_000) {
     const statsGained: Record<string, number> = {};
 
     // 1. Calculate realm Qi gain
-    const realm = REALMS[currentState.currentRealmIndex];
-    const baseRealmQiGain = 1 * realm.qiGainMultiplier;
+    const qiRealm = getCurrentRealm(QI_REALMS, currentState.currentQiRealmIndex, currentState.currentQiStage);
+    const baseRealmQiGain = 1 * qiRealm.gainMultiplier;
     const realmMultiplier = isMeditatingRef.current ? 2 : 1;
     const realmQiGained = baseRealmQiGain * realmMultiplier * secondsAway;
     statsGained.qi = realmQiGained;
@@ -310,7 +362,7 @@ export function useGameLoop(tickMs: number = 1_000) {
 
             return {
               ...prev,
-              qi: Math.min(prev.qi + statsGained.qi, REALMS[prev.currentRealmIndex].qiCap),
+              qi: Math.min(prev.qi + statsGained.qi, getCurrentRealm(QI_REALMS, prev.currentQiRealmIndex, prev.currentQiStage).qiCap),
               curiosity: Math.min(prev.curiosity + (statsGained.curiosity || 0), prev.curiosityCap),
               tenacity: Math.min(prev.tenacity + (statsGained.tenacity || 0), prev.tenacityCap),
               meditationTypes: updatedMeditationTypes,
@@ -334,7 +386,7 @@ export function useGameLoop(tickMs: number = 1_000) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [state.lastActive, state.activeMeditationId, state.currentRealmIndex, state.qi, state.curiosity, state.vitality, state.meditationTypes]);
+  }, [state.lastActive, state.activeMeditationId, state.currentQiRealmIndex, state.currentQiStage, state.qi, state.curiosity, state.vitality, state.meditationTypes]);
 
   /** Add spirit stones – typically called after a successful combat encounter. */
   const addSpiritStones = (amount: number) => {
@@ -403,7 +455,9 @@ export function useGameLoop(tickMs: number = 1_000) {
    */
 // 1. Add a helper to calculate the current chance
 const calculateBreakthroughChance = () => {
-  const nextRealm = REALMS[state.currentRealmIndex + 1];
+  const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
+  const nextRealm = QI_REALMS[currentIndex + 1];
+  
   if (!nextRealm) return 0;
 
   const ratio = Math.min(1, state.qi / nextRealm.qiRequired);
@@ -414,15 +468,14 @@ const calculateBreakthroughChance = () => {
 
 
 const tryBreakthrough = (): { success: boolean; chance: number } => {
-  // const currentRealm = REALMS[state.currentRealmIndex]; // No longer needed for logic
-  const nextRealm = REALMS[state.currentRealmIndex + 1];
+  const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
+  const nextRealm = QI_REALMS[currentIndex + 1];
   
   if (!nextRealm) return { success: false, chance: 0 };
 
   //1. Calculate the dynamic chance based on current Qi progress
   const chance = calculateBreakthroughChance();
-  const canAttempt =  state.qi >= nextRealm.qiRequired / 2 &&
-                      state.spiritStones >= nextRealm.stonesRequired;
+  const canAttempt = state.qi >= nextRealm.qiRequired / 2;
 
   if (!canAttempt) return {success: false, chance};
   
@@ -432,29 +485,29 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
 
     setState((prev) => {
       if(success) {
-
-        const nextIndex = prev.currentRealmIndex + 1;
+        const newIndex = currentIndex + 1;
+        const newRealmIndex = Math.floor(newIndex / 3);
+        const newStage = newIndex % 3;
+        
         const newFeatures = [...prev.unlockedFeatures];
 
          // Progression Logic:
-         //   - Unlock "monster" (combat encounters) after the first breakthrough (index >= 1)
-         //   - Unlock "alchemy" after the second breakthrough (index >= 2)
-         if (nextIndex >= 1 && !newFeatures.includes("monster")) newFeatures.push("monster");
-         if (nextIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
+         if (newRealmIndex >= 1 && !newFeatures.includes("monster")) newFeatures.push("monster");
+         if (newRealmIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
+         if (newRealmIndex >= 3 && !newFeatures.includes("bodyCultivation")) newFeatures.push("bodyCultivation");
+         
         return {
           ...prev,
-          currentRealmIndex: nextIndex,
+          currentQiRealmIndex: newRealmIndex,
+          currentQiStage: newStage,
           qi: 0,
-          spiritStones: prev.spiritStones - nextRealm.stonesRequired,
           unlockedFeatures: newFeatures,        
         };
        } else {
-         // Penalty: Deduct 50% of current Qi on failure, but don't drop below 0.
-         // Also consume spirit stones on failure to add risk/reward balance
+         // Penalty: Deduct 50% of current Qi on failure
          return {
            ...prev,
            qi: Math.max(0, prev.qi * 0.5),
-           spiritStones: prev.spiritStones - nextRealm.stonesRequired,
          };
        }
     });
@@ -464,7 +517,7 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
   /** Add a percentage of total Qi for testing purposes */
   const addTestQi = (percentage: number) => {
     setState((prev) => {
-      const realm = REALMS[prev.currentRealmIndex];
+      const realm = getCurrentRealm(QI_REALMS, prev.currentQiRealmIndex, prev.currentQiStage);
       const amountToAdd = realm.qiCap * (percentage / 100);
       return {
         ...prev,
