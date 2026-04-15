@@ -512,10 +512,6 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
           currentQiStage: newStage,
           qi: 0,
           maxLifespan: newMaxLifespan,
-          // When max lifespan increases (breakthrough), set lifespan to new maximum
-          lifespan: newMaxLifespan > prev.maxLifespan 
-            ? newMaxLifespan 
-            : Math.min(prev.lifespan, newMaxLifespan),
           unlockedFeatures: newFeatures,        
         };
        } else {
