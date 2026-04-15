@@ -60,14 +60,12 @@ export const getCleanNumber = (value: number, options: {
 };
 
 /**
- * Calculate lifespan based on realm index
+ * Calculate lifespan based on total realm index (realm * 3 + stage)
  */
-export const calculateLifespan = (realmIndex: number): number => {
+export const calculateLifespan = (totalRealmIndex: number): number => {
   const BASE_LIFE = 100;
-  
-  if (realmIndex <= 0) return BASE_LIFE;
-  
-  const rawLife = BASE_LIFE * Math.pow(2.15, realmIndex - 1);
+  const realmNumber = Math.floor((totalRealmIndex + 2) / 3);
+  const rawLife = BASE_LIFE * Math.pow(2.15, realmNumber);
   return getCleanNumber(rawLife);
 };
 

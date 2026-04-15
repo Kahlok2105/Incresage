@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerState } from "../types/game";
 import { MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
-import { QI_REALMS, BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
+import { QI_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
 import { calculateLifespan, calculateQiCap } from "../utils/gameMath";
 
 /**
@@ -36,7 +36,7 @@ import { calculateLifespan, calculateQiCap } from "../utils/gameMath";
     curiosityCap: 500,
     tenacityCap: 500,
     
-    lifespan: 100,
+    lifespan: 0,
     maxLifespan: 100,
     
     unlockedFeatures: [],
@@ -105,7 +105,7 @@ export function useGameLoop(tickMs: number = 1_000) {
         curiosityCap: QI_REALMS[0].qiCap / 2,
         tenacityCap: QI_REALMS[0].qiCap / 2,
         
-        lifespan: 100,
+        lifespan: 0,
         maxLifespan: 100,
         
         unlockedFeatures: [],
@@ -249,11 +249,16 @@ export function useGameLoop(tickMs: number = 1_000) {
         const updatedMeditationTypes = gainMeditationExperience(prev, deltaTimeSeconds);
 
         //5. Update all stats while capped by realm's limit.
+        // Increase lifespan by 0.1 per second when player is active (meditating or in activity)
+        const isPlayerActive = isMeditatingRef.current || prev.activeMeditationId !== null;
+        const lifespanGain = isPlayerActive ? 0.1 * deltaTimeSeconds : 0;
+        
         return {
             ...prev,
             qi: Math.min(prev.qi + realmQiGain + meditationQiGain, qiRealm.qiCap), // Cap Qi at realm limit
             curiosity: Math.min(prev.curiosity + curiosityGain, prev.curiosityCap), // Cap curiosity
             tenacity: Math.min(prev.tenacity + tenacityGain, prev.tenacityCap), // Cap tenacity
+            lifespan: Math.min(prev.lifespan + lifespanGain, prev.maxLifespan), // Cap lifespan at max
             meditationTypes: updatedMeditationTypes,
             lastUpdate: now,
         };
@@ -279,15 +284,12 @@ export function useGameLoop(tickMs: number = 1_000) {
   // Update stat caps when realm changes
   useEffect(() => {
     const { vitalityCap, curiosityCap, tenacityCap } = calculateStatCaps(state.currentQiRealmIndex, state.currentQiStage);
-    const newMaxLifespan = calculateLifespan(state.currentQiRealmIndex);
     
     setState(prev => ({
       ...prev,
       vitalityCap,
       curiosityCap,
       tenacityCap,
-      maxLifespan: newMaxLifespan,
-      lifespan: Math.min(prev.lifespan, newMaxLifespan)
     }));
   }, [state.currentQiRealmIndex, state.currentQiStage]);
 
@@ -329,6 +331,11 @@ export function useGameLoop(tickMs: number = 1_000) {
       statsGained.meditationExp = expGained;
     }
 
+    // 4. Calculate lifespan gain when active while away
+    if (isMeditatingRef.current || currentState.activeMeditationId !== null) {
+      statsGained.lifespan = 0.1 * secondsAway;
+    }
+
     return statsGained;
   };
 
@@ -365,6 +372,7 @@ export function useGameLoop(tickMs: number = 1_000) {
               qi: Math.min(prev.qi + statsGained.qi, getCurrentRealm(QI_REALMS, prev.currentQiRealmIndex, prev.currentQiStage).qiCap),
               curiosity: Math.min(prev.curiosity + (statsGained.curiosity || 0), prev.curiosityCap),
               tenacity: Math.min(prev.tenacity + (statsGained.tenacity || 0), prev.tenacityCap),
+              lifespan: Math.min(prev.lifespan + (statsGained.lifespan || 0), prev.maxLifespan),
               meditationTypes: updatedMeditationTypes,
               lastUpdate: now
             };
@@ -496,11 +504,18 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
          if (newRealmIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
          if (newRealmIndex >= 3 && !newFeatures.includes("bodyCultivation")) newFeatures.push("bodyCultivation");
          
+        const newMaxLifespan = calculateLifespan(newIndex);
+        
         return {
           ...prev,
           currentQiRealmIndex: newRealmIndex,
           currentQiStage: newStage,
           qi: 0,
+          maxLifespan: newMaxLifespan,
+          // When max lifespan increases (breakthrough), set lifespan to new maximum
+          lifespan: newMaxLifespan > prev.maxLifespan 
+            ? newMaxLifespan 
+            : Math.min(prev.lifespan, newMaxLifespan),
           unlockedFeatures: newFeatures,        
         };
        } else {
