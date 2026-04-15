@@ -8,6 +8,7 @@ import { MonsterEncounter } from "./components/MonsterEncounter";
 import { AlchemyPanel } from "./components/AlchemyPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
+import { WelcomeModal } from "./components/WelcomeModal";
 import { useNotifications } from "./hooks/useNotifications";
 import { useEffect, useState } from "react";
 
@@ -16,19 +17,17 @@ export default function App() {
   const {
     state,
     tryBreakthrough,
-    isMeditating,
-    toggleMeditation,
     encounterMonster,
-    qiPerSecond,
     usableQi,
     totalQi,
     resetGame,
     addTestQi,
     setActiveMeditation,
-    levelUpMeditation,
     getCurrentMeditationStats,
     meditationTypes,
-    activeMeditationId
+    activeMeditationId,
+    welcomeData,
+    clearWelcomeData
   } = useGameLoop();
 
   // Notification system
@@ -62,7 +61,6 @@ export default function App() {
                 }
                 return result;
               }}
-              qiPerSecond={qiPerSecond}
               usableQi={usableQi}
               totalQi={totalQi}
               resetGame={resetGame}
@@ -74,7 +72,6 @@ export default function App() {
           meditationTypes={meditationTypes}
           activeMeditationId={activeMeditationId}
           setActiveMeditation={setActiveMeditation}
-          levelUpMeditation={levelUpMeditation}
           getCurrentMeditationStats={getCurrentMeditationStats}
         />
         <CombatControls encounterMonster={encounterMonster} />
@@ -87,6 +84,16 @@ export default function App() {
         {/* Unlock toast notification */}
         <UnlockToast feature={lastFeature} />
         </main>
+        {/* Welcome back modal */}
+        {welcomeData?.showModal && (
+          <WelcomeModal
+            secondsAway={welcomeData.secondsAway}
+            totalQiGained={welcomeData.totalQiGained}
+            statsGained={welcomeData.statsGained}
+            onClose={clearWelcomeData}
+          />
+        )}
+
         {/* Global notification container */}
         <NotificationContainer
           notifications={notifications}

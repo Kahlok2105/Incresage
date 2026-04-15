@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { PlayerState, MeditationType } from "../types/game";
+import type { PlayerState } from "../types/game";
 import { REALMS, MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
 
 /**
@@ -11,33 +11,56 @@ import { REALMS, MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
  *   attempt a breakthrough when requirements are met.
  */
 
-const DEFAULT_STATE: PlayerState = {
-  qi: 0,
-  spiritStones: 0,
-  currentRealmIndex: 0,
-  lastUpdate: Date.now(),
-  vitality: 0,
-  spirit: 0,
-  curiosity: 0,
-  unlockedFeatures: [],
-  meditationTypes: [...MEDITATION_TYPES],
-  activeMeditationId: null,
-};
+  const DEFAULT_STATE: PlayerState = {
+    qi: 0,
+    spiritStones: 0,
+    currentRealmIndex: 0,
+    lastUpdate: Date.now(),
+    lastActive: Date.now(),
+    vitality: 0,
+    spirit: 0,
+    vitalityCap: 500, // Default to Mortal realm cap (1000/2)
+    curiosity: 0,
+    tenacity: 0,
+    curiosityCap: 500, // Default to Mortal realm cap (1000/2)
+    tenacityCap: 500, // Default to Mortal realm cap (1000/2)
+    unlockedFeatures: [],
+    meditationTypes: [...MEDITATION_TYPES],
+    activeMeditationId: null,
+  };
 
 export function useGameLoop(tickMs: number = 1_000) {
   // Initialise player state – start at the first realm with no resources.
   // Load persisted state if available
   const persisted = typeof localStorage !== "undefined" ? localStorage.getItem("gameState") : null;
   const initialState: PlayerState = persisted
-    ? JSON.parse(persisted)
+    ? (() => {
+        const parsed = JSON.parse(persisted);
+        // Migrate old vitality field to tenacity for backward compatibility
+        const migratedTenacity = parsed.tenacity || parsed.vitality || 0;
+        return {
+          ...parsed,
+          lastActive: parsed.lastActive || Date.now(),
+          vitality: parsed.vitality || 0, // Keep vitality as HP
+          tenacity: migratedTenacity, // Use migrated value for tenacity
+          vitalityCap: parsed.vitalityCap || REALMS[parsed.currentRealmIndex || 0].qiCap / 2,
+          curiosityCap: parsed.curiosityCap || REALMS[parsed.currentRealmIndex || 0].qiCap / 2,
+          tenacityCap: parsed.tenacityCap || REALMS[parsed.currentRealmIndex || 0].qiCap / 2
+        };
+      })()
     : {
         qi: 0,
         spiritStones: 0,
         currentRealmIndex: 0,
         lastUpdate: Date.now(),
+        lastActive: Date.now(),
         vitality: 0,
         spirit: 0,
+        vitalityCap: REALMS[0].qiCap / 2,
         curiosity: 0,
+        tenacity: 0,
+        curiosityCap: REALMS[0].qiCap / 2,
+        tenacityCap: REALMS[0].qiCap / 2,
         unlockedFeatures: [],
         meditationTypes: [...MEDITATION_TYPES],
         activeMeditationId: null,
@@ -67,6 +90,16 @@ export function useGameLoop(tickMs: number = 1_000) {
   // Helper: calculate meditation stat multiplier based on level
   const calculateMeditationMultiplier = (level: number) => {
     return 1 + Math.floor(level / 10);
+  };
+
+  // Helper: calculate stat caps based on current realm
+  const calculateStatCaps = (realmIndex: number) => {
+    const realm = REALMS[realmIndex];
+    return {
+      vitalityCap: realm.qiCap / 2,
+      curiosityCap: realm.qiCap / 2,
+      tenacityCap: realm.qiCap / 2
+    };
   };
 
   // Helper: get active meditation stats
@@ -171,8 +204,8 @@ export function useGameLoop(tickMs: number = 1_000) {
         return {
             ...prev,
             qi: Math.min(prev.qi + realmQiGain + meditationQiGain, realm.qiCap), // Cap Qi at realm limit
-            curiosity: prev.curiosity + curiosityGain,
-            vitality: prev.vitality + tenacityGain, // Using vitality field for tenacity
+            curiosity: Math.min(prev.curiosity + curiosityGain, prev.curiosityCap), // Cap curiosity
+            tenacity: Math.min(prev.tenacity + tenacityGain, prev.tenacityCap), // Cap tenacity
             meditationTypes: updatedMeditationTypes,
             lastUpdate: now,
         };
@@ -194,6 +227,114 @@ export function useGameLoop(tickMs: number = 1_000) {
       localStorage.setItem("gameState", JSON.stringify(state));
     }
   }, [state]);
+
+  // Update stat caps when realm changes
+  useEffect(() => {
+    const { vitalityCap, curiosityCap, tenacityCap } = calculateStatCaps(state.currentRealmIndex);
+    setState(prev => ({
+      ...prev,
+      vitalityCap,
+      curiosityCap,
+      tenacityCap
+    }));
+  }, [state.currentRealmIndex]);
+
+  // Track visibility changes for away time calculation
+  const [welcomeData, setWelcomeData] = useState<{
+    showModal: boolean;
+    secondsAway: number;
+    statsGained: Record<string, number>;
+    totalQiGained: number;
+  } | null>(null);
+
+  // Helper: calculate all stats gained while away
+  const calculateAwayStats = (currentState: PlayerState, secondsAway: number): Record<string, number> => {
+    const statsGained: Record<string, number> = {};
+
+    // 1. Calculate realm Qi gain
+    const realm = REALMS[currentState.currentRealmIndex];
+    const baseRealmQiGain = 1 * realm.qiGainMultiplier;
+    const realmMultiplier = isMeditatingRef.current ? 2 : 1;
+    const realmQiGained = baseRealmQiGain * realmMultiplier * secondsAway;
+    statsGained.qi = realmQiGained;
+
+    // 2. Calculate meditation stats if active
+    const meditationStats = getActiveMeditationStats(currentState);
+    if (currentState.activeMeditationId) {
+      const meditationQiGained = meditationStats.qi * secondsAway;
+      const curiosityGained = meditationStats.curiosity * secondsAway;
+      const tenacityGained = meditationStats.tenacity * secondsAway;
+
+      // Add meditation Qi to total Qi
+      statsGained.qi += meditationQiGained;
+      statsGained.curiosity = curiosityGained;
+      statsGained.tenacity = tenacityGained;
+    }
+
+    // 3. Calculate meditation experience gained
+    if (currentState.activeMeditationId) {
+      const expGained = secondsAway;
+      statsGained.meditationExp = expGained;
+    }
+
+    return statsGained;
+  };
+
+  // Handle visibility changes
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User has returned to the page
+        const now = Date.now();
+        const secondsAway = (now - state.lastActive) / 1000;
+
+        if (secondsAway > 60) {
+          // User was away for more than 60 seconds, calculate gains
+          const statsGained = calculateAwayStats(state, secondsAway);
+          const totalQiGained = statsGained.qi || 0;
+
+          setWelcomeData({
+            showModal: true,
+            secondsAway,
+            statsGained,
+            totalQiGained
+          });
+
+          // Apply the gains to the state
+          setState(prev => {
+            // Calculate meditation experience gains
+            let updatedMeditationTypes = prev.meditationTypes;
+            if (prev.activeMeditationId && statsGained.meditationExp) {
+              updatedMeditationTypes = gainMeditationExperience(prev, statsGained.meditationExp);
+            }
+
+            return {
+              ...prev,
+              qi: Math.min(prev.qi + statsGained.qi, REALMS[prev.currentRealmIndex].qiCap),
+              curiosity: Math.min(prev.curiosity + (statsGained.curiosity || 0), prev.curiosityCap),
+              tenacity: Math.min(prev.tenacity + (statsGained.tenacity || 0), prev.tenacityCap),
+              meditationTypes: updatedMeditationTypes,
+              lastUpdate: now
+            };
+          });
+        }
+      } else {
+        // User is leaving the page, update lastActive timestamp
+        setState(prev => ({
+          ...prev,
+          lastActive: Date.now()
+        }));
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [state.lastActive, state.activeMeditationId, state.currentRealmIndex, state.qi, state.curiosity, state.vitality, state.meditationTypes]);
 
   /** Add spirit stones – typically called after a successful combat encounter. */
   const addSpiritStones = (amount: number) => {
@@ -348,7 +489,9 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     levelUpMeditation,
     getCurrentMeditationStats,
     meditationTypes: state.meditationTypes,
-    activeMeditationId: state.activeMeditationId
+    activeMeditationId: state.activeMeditationId,
+    welcomeData,
+    clearWelcomeData: () => setWelcomeData(null)
   };
 }
 

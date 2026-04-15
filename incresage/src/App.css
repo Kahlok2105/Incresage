@@ -571,3 +571,18 @@ button:disabled {
   color: var(--accent);
   margin-left: 8px;
 }
+
+.other-stats {
+  margin: 16px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-gain {
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

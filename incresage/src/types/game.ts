@@ -43,25 +43,37 @@ export interface MeditationType {
   maxLevel: number;
 }
 
-/**
- * Player's mutable state.
- */
-export interface PlayerState {
-  /** Current Qi amount */
-  qi: number;
-  /** Accumulated spirit stones */
-  spiritStones: number;
-  /** Index into the REALMS array indicating the current realm */
-  currentRealmIndex: number;
-  /** Timestamp of the last game‑loop tick (ms since epoch) */
-  lastUpdate: number;
-  vitality: number;
-  spirit: number;
-  curiosity: number;
-  unlockedFeatures: string[]; // e.g., ["combat", "meditation"]
-  /** Available meditation types */
-  meditationTypes: MeditationType[];
-  /** Currently active meditation type ID, or null if none */
-  activeMeditationId: string | null;
-}
+  /**
+   * Player's mutable state.
+   */
+  export interface PlayerState {
+    /** Current Qi amount */
+    qi: number;
+    /** Accumulated spirit stones */
+    spiritStones: number;
+    /** Index into the REALMS array indicating the current realm */
+    currentRealmIndex: number;
+    /** Timestamp of the last game‑loop tick (ms since epoch) */
+    lastUpdate: number;
+    /** Timestamp when the user was last active (for away time tracking) */
+    lastActive: number;
+    /** Health points for combat */
+    vitality: number;
+    /** Mana/energy points for combat abilities */
+    spirit: number;
+    /** Maximum vitality capacity */
+    vitalityCap: number;
+    curiosity: number;
+    /** Mental fortitude for meditation */
+    tenacity: number;
+    /** Maximum curiosity capacity (half of current realm's qiCap) */
+    curiosityCap: number;
+    /** Maximum tenacity capacity (half of current realm's qiCap) */
+    tenacityCap: number;
+    unlockedFeatures: string[]; // e.g., ["combat", "meditation"]
+    /** Available meditation types */
+    meditationTypes: MeditationType[];
+    /** Currently active meditation type ID, or null if none */
+    activeMeditationId: string | null;
+  }
 
