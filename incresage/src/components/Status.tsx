@@ -15,6 +15,7 @@ export const Status: React.FC<{
     currentBodyStage: number;
     curiosity: number; 
     vitality: number; 
+    spirit: number;
     tenacity: number; 
     vitalityCap: number; 
     tenacityCap: number;
@@ -51,6 +52,10 @@ export const Status: React.FC<{
       : "Accumulate More Qi"
     : "No Further Realms";
 
+  // Calculate HP/MP bar percentages
+  const vitalityPercent = Math.min(100, Math.max(0, ((state.vitality || 0) / state.vitalityCap) * 100));
+  const spiritPercent = Math.min(100, Math.max(0, ((state.spirit || 0) / (state as any).spiritCap) * 100));
+
   return (
     <div className="status">
       <h2>Qi Cultivation: {currentQiRealm.displayName}</h2>
@@ -58,7 +63,29 @@ export const Status: React.FC<{
       <p>Qi: {usableQi.toFixed(0)} / {totalQi.toFixed(0)}</p>
       <p>Spirit Stones: {state.spiritStones}</p>
       <p>Lifespan: {state.lifespan.toFixed(0)} / {state.maxLifespan.toFixed(0)} years</p>
-      <p>Vitality: {(state.vitality || 0).toFixed(1)} / {state.vitalityCap.toFixed(0)}</p>
+      
+      {/* Vitality HP Bar */}
+      <div className="stat-bar-container hp-bar">
+        <div className="stat-bar-label">
+          <span>❤️ Vitality</span>
+          <span>{(state.vitality || 0).toFixed(0)} / {state.vitalityCap.toFixed(0)}</span>
+        </div>
+        <div className="stat-bar">
+          <div className="stat-bar-fill" style={{ width: `${vitalityPercent}%` }} />
+        </div>
+      </div>
+      
+      {/* Spirit MP Bar */}
+      <div className="stat-bar-container mp-bar">
+        <div className="stat-bar-label">
+          <span>💎 Spirit</span>
+          <span>{(state.spirit || 0).toFixed(0)} / {(state as any).spiritCap ? (state as any).spiritCap.toFixed(0) : state.vitalityCap.toFixed(0)}</span>
+        </div>
+        <div className="stat-bar">
+          <div className="stat-bar-fill" style={{ width: `${spiritPercent}%` }} />
+        </div>
+      </div>
+      
       <p>Curiosity: {(state.curiosity || 0).toFixed(1)} / {curiosityCap.toFixed(0)}</p>
       <p>Tenacity: {(state.tenacity || 0).toFixed(1)} / {state.tenacityCap.toFixed(0)}</p>
       {nextRealm && (

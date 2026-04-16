@@ -140,10 +140,28 @@ export function useGameLoop(tickMs: number = 1_000) {
   };
 
   // Helper: calculate stat caps based on current realm
-  const calculateStatCaps = (realmIndex: number, stage: number = 0) => {
-    const qiCap = calculateQiCap(realmIndex, stage);
+  const calculateStatCaps = (state: PlayerState) => {
+    const qiCap = calculateQiCap(state.currentQiRealmIndex, state.currentQiStage);
+    
+    // Base values
+    const BASE_VITALITY = 100;
+    const BASE_SPIRIT = 100;
+    
+    // Realm multipliers (minimum 1 for realm 0)
+    const qiMultiplier = Math.max(1, state.currentQiRealmIndex);
+    const bodyMultiplier = Math.max(1, state.currentBodyRealmIndex);
+    
+    // ✅ Vitality formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(Tenacity)
+    const vitalityCap = (BASE_VITALITY * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.tenacity));
+    
+    // ✅ Spirit formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(Knowledge)
+    // Knowledge is placeholder for future implementation
+    const knowledge = 0;
+    const spiritCap = (BASE_SPIRIT * qiMultiplier * bodyMultiplier) + Math.sqrt(knowledge);
+    
     return {
-      vitalityCap: qiCap / 2,
+      vitalityCap: Math.max(100, vitalityCap),
+      spiritCap: Math.max(100, spiritCap),
       curiosityCap: qiCap / 2,
       tenacityCap: qiCap / 2
     };
@@ -283,15 +301,16 @@ export function useGameLoop(tickMs: number = 1_000) {
 
   // Update stat caps when realm changes
   useEffect(() => {
-    const { vitalityCap, curiosityCap, tenacityCap } = calculateStatCaps(state.currentQiRealmIndex, state.currentQiStage);
+    const { vitalityCap, spiritCap, curiosityCap, tenacityCap } = calculateStatCaps(state);
     
     setState(prev => ({
       ...prev,
       vitalityCap,
+      spiritCap,
       curiosityCap,
       tenacityCap,
     }));
-  }, [state.currentQiRealmIndex, state.currentQiStage]);
+  }, [state.currentQiRealmIndex, state.currentQiStage, state.currentBodyRealmIndex, state.tenacity]);
 
   // Track visibility changes for away time calculation
   const [welcomeData, setWelcomeData] = useState<{
