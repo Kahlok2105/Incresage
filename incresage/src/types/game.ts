@@ -79,6 +79,9 @@ export interface MeditationType {
     /** Maximum vitality capacity */
     vitalityCap: number;
     
+    /** Maximum spirit capacity */
+    spiritCap: number;
+    
     /**Mental Ability */
     knowledge: number;
 

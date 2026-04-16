@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PlayerState } from "../types/game";
 import { MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
 import { QI_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
-import { calculateLifespan, calculateQiCap } from "../utils/gameMath";
+import { calculateLifespan } from "../utils/gameMath";
 
 /**
  * Core game‑loop hook.
@@ -29,6 +29,7 @@ import { calculateLifespan, calculateQiCap } from "../utils/gameMath";
     vitality: 0,
     spirit: 0,
     vitalityCap: 100,
+    spiritCap: 100,
     knowledge: 0,
 
     curiosity: 0,
@@ -73,7 +74,14 @@ export function useGameLoop(tickMs: number = 1_000) {
           tenacity: migratedTenacity,
           
           // Calculate proper stat caps
-          vitalityCap: parsed.vitalityCap || calculateQiCap(oldRealmIndex, 0) / 2,
+          vitalityCap: parsed.vitalityCap || Math.max(
+            100,
+            (100 * Math.max(1, parsed.currentQiRealmIndex ?? oldRealmIndex) * Math.max(1, parsed.currentBodyRealmIndex ?? 0)) + Math.sqrt(Math.max(0, migratedTenacity))
+          ),
+          spiritCap: parsed.spiritCap || Math.max(
+            100,
+            (100 * Math.max(1, parsed.currentQiRealmIndex ?? oldRealmIndex) * Math.max(1, parsed.currentBodyRealmIndex ?? 0)) + Math.sqrt(Math.max(0, parsed.knowledge ?? 0))
+          ),
 
           lifespan: parsed.lifespan ?? maxLifespan,
           maxLifespan: parsed.maxLifespan ?? maxLifespan
@@ -94,6 +102,7 @@ export function useGameLoop(tickMs: number = 1_000) {
         vitality: 0,
         spirit: 0,
         vitalityCap: QI_REALMS[0].qiCap / 2,
+        spiritCap: QI_REALMS[0].qiCap / 2,
         
         curiosity: 0,
         tenacity: 0,
@@ -134,8 +143,6 @@ export function useGameLoop(tickMs: number = 1_000) {
 
   // Helper: calculate stat caps based on current realm
   const calculateStatCaps = (state: PlayerState) => {
-    const qiCap = calculateQiCap(state.currentQiRealmIndex, state.currentQiStage);
-    
     // Base values
     const BASE_VITALITY = 100;
     const BASE_SPIRIT = 100;
@@ -148,8 +155,7 @@ export function useGameLoop(tickMs: number = 1_000) {
     const vitalityCap = (BASE_VITALITY * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.tenacity));
     
     // ✅ Spirit formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(Knowledge)
-    // Knowledge is placeholder for future implementation
-    const spiritCap = (BASE_SPIRIT * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.tenacity));
+    const spiritCap = (BASE_SPIRIT * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.knowledge));
     
     return {
       vitalityCap: Math.max(100, vitalityCap),
@@ -262,10 +268,23 @@ export function useGameLoop(tickMs: number = 1_000) {
         // Increase lifespan by 0.1 per second when player is active (meditating or in activity)
         const isPlayerActive = isMeditatingRef.current || prev.activeMeditationId !== null;
         const lifespanGain = isPlayerActive ? 0.1 * deltaTimeSeconds : 0;
-        
+
+        const newTenacity = prev.tenacity + tenacityGain;
+        const newKnowledge = prev.knowledge + knowledgeGain;
+        const { vitalityCap, spiritCap } = calculateStatCaps({
+          ...prev,
+          tenacity: newTenacity,
+          knowledge: newKnowledge,
+        });
+
         return {
             ...prev,
             qi: Math.min(prev.qi + realmQiGain + meditationQiGain, qiRealm.qiCap), // Cap Qi at realm limit
+            curiosity: prev.curiosity + curiosityGain,
+            tenacity: newTenacity,
+            knowledge: newKnowledge,
+            vitalityCap,
+            spiritCap,
             lifespan: Math.min(prev.lifespan + lifespanGain, prev.maxLifespan), // Cap lifespan at max
             meditationTypes: updatedMeditationTypes,
             lastUpdate: now,
@@ -288,17 +307,6 @@ export function useGameLoop(tickMs: number = 1_000) {
       localStorage.setItem("gameState", JSON.stringify(state));
     }
   }, [state]);
-
-  // Update stat caps when realm changes
-  useEffect(() => {
-    const { vitalityCap, spiritCap } = calculateStatCaps(state);
-    
-    setState(prev => ({
-      ...prev,
-      vitalityCap,
-      spiritCap,
-    }));
-  }, [state.currentQiRealmIndex, state.currentQiStage, state.currentBodyRealmIndex, state.tenacity]);
 
   // Track visibility changes for away time calculation
   const [welcomeData, setWelcomeData] = useState<{
@@ -514,12 +522,19 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
          if (newRealmIndex >= 3 && !newFeatures.includes("bodyCultivation")) newFeatures.push("bodyCultivation");
          
         const newMaxLifespan = calculateLifespan(newIndex);
+        const { vitalityCap, spiritCap } = calculateStatCaps({
+          ...prev,
+          currentQiRealmIndex: newRealmIndex,
+          currentQiStage: newStage,
+        });
         
         return {
           ...prev,
           currentQiRealmIndex: newRealmIndex,
           currentQiStage: newStage,
           qi: 0,
+          vitalityCap,
+          spiritCap,
           maxLifespan: newMaxLifespan,
           unlockedFeatures: newFeatures,        
         };

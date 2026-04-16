@@ -59,15 +59,15 @@ export const Status: React.FC<{
     <div className="status">
       <h2>Qi Cultivation: {currentQiRealm.displayName}</h2>
       <p>Body Cultivation: {currentBodyRealm.displayName}</p>
-      <p>Qi: {usableQi.toFixed(0)} / {totalQi.toFixed(0)}</p>
+      <p>Qi: {(usableQi || 0).toFixed(0)} / {(totalQi || 0).toFixed(0)}</p>
       <p>Spirit Stones: {state.spiritStones}</p>
-      <p>Lifespan: {state.lifespan.toFixed(0)} / {state.maxLifespan.toFixed(0)} years</p>
+      <p>Lifespan: {(state.lifespan || 0).toFixed(0) } / {(state.maxLifespan || 0).toFixed(0)} years</p>
       
       {/* Vitality HP Bar */}
       <div className="stat-bar-container hp-bar">
         <div className="stat-bar-label">
           <span>❤️ Vitality</span>
-          <span>{(state.vitality || 0).toFixed(0)} / {state.vitalityCap.toFixed(0)}</span>
+          <span>{(state.vitality || 0).toFixed(0)} / {(state.vitalityCap || 0).toFixed(0)}</span>
         </div>
         <div className="stat-bar">
           <div className="stat-bar-fill" style={{ width: `${vitalityPercent}%` }} />
@@ -78,7 +78,7 @@ export const Status: React.FC<{
       <div className="stat-bar-container mp-bar">
         <div className="stat-bar-label">
           <span>💎 Spirit</span>
-          <span>{(state.spirit || 0).toFixed(0)} / {state.spiritCap.toFixed(0)}</span>
+          <span>{(state.spirit || 0).toFixed(0)} / {(state.spiritCap || 0).toFixed(0)}</span>
         </div>
         <div className="stat-bar">
           <div className="stat-bar-fill" style={{ width: `${spiritPercent}%` }} />
