@@ -16,9 +16,10 @@ export const Status: React.FC<{
     curiosity: number; 
     vitality: number; 
     spirit: number;
-    tenacity: number; 
+    tenacity: number;
+    knowledge: number; 
     vitalityCap: number; 
-    tenacityCap: number;
+    spiritCap: number;
     lifespan: number;
     maxLifespan: number;
   };
@@ -32,8 +33,6 @@ export const Status: React.FC<{
   // Get current realms
   const currentQiRealm = getCurrentRealm(QI_REALMS, state.currentQiRealmIndex, state.currentQiStage);
   const currentBodyRealm = getCurrentRealm(BODY_REALMS, state.currentBodyRealmIndex, state.currentBodyStage);
-  
-  const curiosityCap = currentQiRealm.qiCap * 0.5; // 50% of Qi cap
   
   const currentQiIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
   const nextRealm = QI_REALMS[currentQiIndex + 1];
@@ -79,15 +78,17 @@ export const Status: React.FC<{
       <div className="stat-bar-container mp-bar">
         <div className="stat-bar-label">
           <span>💎 Spirit</span>
-          <span>{(state.spirit || 0).toFixed(0)} / {(state as any).spiritCap ? (state as any).spiritCap.toFixed(0) : state.vitalityCap.toFixed(0)}</span>
+          <span>{(state.spirit || 0).toFixed(0)} / {state.spiritCap.toFixed(0)}</span>
         </div>
         <div className="stat-bar">
           <div className="stat-bar-fill" style={{ width: `${spiritPercent}%` }} />
         </div>
       </div>
       
-      <p>Curiosity: {(state.curiosity || 0).toFixed(1)} / {curiosityCap.toFixed(0)}</p>
-      <p>Tenacity: {(state.tenacity || 0).toFixed(1)} / {state.tenacityCap.toFixed(0)}</p>
+      <p>Curiosity: {(state.curiosity || 0).toFixed(1)}</p>
+      <p>Tenacity: {(state.tenacity || 0).toFixed(1)} </p>
+      <p>Knowledge: {(state.knowledge || 0).toFixed(1)}</p>
+      
       {nextRealm && (
         <div className="breakthrough">
           <h3>Next: {nextRealm.displayName}</h3>

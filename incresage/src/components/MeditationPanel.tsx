@@ -8,7 +8,7 @@ export const MeditationPanel: React.FC<{
   meditationTypes: MeditationType[];
   activeMeditationId: string | null;
   setActiveMeditation: (meditationId: string | null) => void;
-  getCurrentMeditationStats: () => { curiosity: number; tenacity: number; qi: number };
+  getCurrentMeditationStats: () => { curiosity: number; tenacity: number; knowledge: number; qi: number };
 }> = ({
   meditationTypes,
   activeMeditationId,
@@ -36,6 +36,7 @@ export const MeditationPanel: React.FC<{
           <h3>Active Effects:</h3>
           {currentStats.curiosity > 0 && <p>Curiosity: +{currentStats.curiosity}/s</p>}
           {currentStats.tenacity > 0 && <p>Tenacity: +{currentStats.tenacity}/s</p>}
+          {currentStats.knowledge > 0 && <p>Knowledge: +{currentStats.knowledge}/s</p>}
           {currentStats.qi > 0 && <p>Qi: +{currentStats.qi}/s</p>}
         </div>
       ) : (
@@ -48,6 +49,7 @@ export const MeditationPanel: React.FC<{
           const multiplier = 1 + Math.floor(meditation.level / 10);
           const currentCuriosity = meditation.baseCuriosity * meditation.level * multiplier;
           const currentVitality = meditation.baseTenacity * meditation.level * multiplier;
+          const currentKnowledge = meditation.baseKnowledge * meditation.level * multiplier;
           const currentQi = meditation.baseQi * meditation.level * multiplier;
 
           return (
@@ -56,6 +58,7 @@ export const MeditationPanel: React.FC<{
               <div className="meditation-effects">
                 {currentCuriosity > 0 && <span title={`Base ${meditation.baseCuriosity} × Level ${meditation.level} × Multiplier ${multiplier}`}>Curiosity: +{currentCuriosity}/s</span>}
                 {currentVitality > 0 && <span title={`Base ${meditation.baseTenacity} × Level ${meditation.level} × Multiplier ${multiplier}`}>Tenacity: +{currentVitality}/s</span>}
+                {currentKnowledge > 0 && <span title={`Base ${meditation.baseKnowledge} × Level ${meditation.level} × Multiplier ${multiplier}`}>Knowledge: +{currentKnowledge}/s</span>}
                 {currentQi > 0 && <span title={`Base ${meditation.baseQi} × Level ${meditation.level} × Multiplier ${multiplier}`}>Qi: +{currentQi}/s</span>}
               </div>
               <div className="meditation-controls">

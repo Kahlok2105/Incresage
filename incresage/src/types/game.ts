@@ -38,6 +38,8 @@ export interface MeditationType {
   baseTenacity: number;
   /** Base qi gain per second */
   baseQi: number;
+  /** Base knowledge gain per second */
+  baseKnowledge: number;
   /** Current level (1-100) */
   level: number;
   /** Current experience points */
@@ -77,14 +79,12 @@ export interface MeditationType {
     /** Maximum vitality capacity */
     vitalityCap: number;
     
+    /**Mental Ability */
+    knowledge: number;
+
     curiosity: number;
     /** Mental fortitude for meditation */
     tenacity: number;
-    
-    /** Maximum curiosity capacity */
-    curiosityCap: number;
-    /** Maximum tenacity capacity */
-    tenacityCap: number;
     
     /** Current lifespan in years */
     lifespan: number;

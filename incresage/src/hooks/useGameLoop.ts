@@ -28,13 +28,11 @@ import { calculateLifespan, calculateQiCap } from "../utils/gameMath";
     
     vitality: 0,
     spirit: 0,
-    vitalityCap: 500, // Default to Mortal realm cap (1000/2)
-    
+    vitalityCap: 100,
+    knowledge: 0,
+
     curiosity: 0,
     tenacity: 0,
-    
-    curiosityCap: 500,
-    tenacityCap: 500,
     
     lifespan: 0,
     maxLifespan: 100,
@@ -76,9 +74,7 @@ export function useGameLoop(tickMs: number = 1_000) {
           
           // Calculate proper stat caps
           vitalityCap: parsed.vitalityCap || calculateQiCap(oldRealmIndex, 0) / 2,
-          curiosityCap: parsed.curiosityCap || calculateQiCap(oldRealmIndex, 0) / 2,
-          tenacityCap: parsed.tenacityCap || calculateQiCap(oldRealmIndex, 0) / 2,
-          
+
           lifespan: parsed.lifespan ?? maxLifespan,
           maxLifespan: parsed.maxLifespan ?? maxLifespan
         };
@@ -101,9 +97,6 @@ export function useGameLoop(tickMs: number = 1_000) {
         
         curiosity: 0,
         tenacity: 0,
-        
-        curiosityCap: QI_REALMS[0].qiCap / 2,
-        tenacityCap: QI_REALMS[0].qiCap / 2,
         
         lifespan: 0,
         maxLifespan: 100,
@@ -156,21 +149,18 @@ export function useGameLoop(tickMs: number = 1_000) {
     
     // ✅ Spirit formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(Knowledge)
     // Knowledge is placeholder for future implementation
-    const knowledge = 0;
-    const spiritCap = (BASE_SPIRIT * qiMultiplier * bodyMultiplier) + Math.sqrt(knowledge);
+    const spiritCap = (BASE_SPIRIT * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.tenacity));
     
     return {
       vitalityCap: Math.max(100, vitalityCap),
       spiritCap: Math.max(100, spiritCap),
-      curiosityCap: qiCap / 2,
-      tenacityCap: qiCap / 2
     };
   };
 
   // Helper: get active meditation stats
   const getActiveMeditationStats = (currentState: PlayerState) => {
     if (!currentState.activeMeditationId) {
-      return { curiosity: 0, tenacity: 0, qi: 0 };
+      return { curiosity: 0, tenacity: 0, knowledge: 0, qi: 0 };
     }
 
     const activeMeditation = currentState.meditationTypes.find(
@@ -178,7 +168,7 @@ export function useGameLoop(tickMs: number = 1_000) {
     );
 
     if (!activeMeditation) {
-      return { curiosity: 0, tenacity: 0, qi: 0 };
+      return { curiosity: 0, tenacity: 0, knowledge: 0, qi: 0 };
     }
 
     // (Base × Level) × Multiplier
@@ -187,6 +177,7 @@ export function useGameLoop(tickMs: number = 1_000) {
     return {
       curiosity: activeMeditation.baseCuriosity * activeMeditation.level * multiplier,
       tenacity: activeMeditation.baseTenacity * activeMeditation.level * multiplier,
+      knowledge: activeMeditation.baseKnowledge * activeMeditation.level * multiplier,
       qi: activeMeditation.baseQi * activeMeditation.level * multiplier,
     };
   };
@@ -262,6 +253,7 @@ export function useGameLoop(tickMs: number = 1_000) {
         const meditationQiGain = meditationStats.qi * deltaTimeSeconds;
         const curiosityGain = meditationStats.curiosity * deltaTimeSeconds;
         const tenacityGain = meditationStats.tenacity * deltaTimeSeconds;
+        const knowledgeGain = meditationStats.knowledge * deltaTimeSeconds;
 
         //4. Update meditation experience
         const updatedMeditationTypes = gainMeditationExperience(prev, deltaTimeSeconds);
@@ -274,8 +266,6 @@ export function useGameLoop(tickMs: number = 1_000) {
         return {
             ...prev,
             qi: Math.min(prev.qi + realmQiGain + meditationQiGain, qiRealm.qiCap), // Cap Qi at realm limit
-            curiosity: Math.min(prev.curiosity + curiosityGain, prev.curiosityCap), // Cap curiosity
-            tenacity: Math.min(prev.tenacity + tenacityGain, prev.tenacityCap), // Cap tenacity
             lifespan: Math.min(prev.lifespan + lifespanGain, prev.maxLifespan), // Cap lifespan at max
             meditationTypes: updatedMeditationTypes,
             lastUpdate: now,
@@ -301,14 +291,12 @@ export function useGameLoop(tickMs: number = 1_000) {
 
   // Update stat caps when realm changes
   useEffect(() => {
-    const { vitalityCap, spiritCap, curiosityCap, tenacityCap } = calculateStatCaps(state);
+    const { vitalityCap, spiritCap } = calculateStatCaps(state);
     
     setState(prev => ({
       ...prev,
       vitalityCap,
       spiritCap,
-      curiosityCap,
-      tenacityCap,
     }));
   }, [state.currentQiRealmIndex, state.currentQiStage, state.currentBodyRealmIndex, state.tenacity]);
 
@@ -337,11 +325,12 @@ export function useGameLoop(tickMs: number = 1_000) {
       const meditationQiGained = meditationStats.qi * secondsAway;
       const curiosityGained = meditationStats.curiosity * secondsAway;
       const tenacityGained = meditationStats.tenacity * secondsAway;
-
+      const knowledgeGained = meditationStats.knowledge * secondsAway;
       // Add meditation Qi to total Qi
       statsGained.qi += meditationQiGained;
       statsGained.curiosity = curiosityGained;
       statsGained.tenacity = tenacityGained;
+      statsGained.knowledge = knowledgeGained;
     }
 
     // 3. Calculate meditation experience gained
@@ -389,8 +378,9 @@ export function useGameLoop(tickMs: number = 1_000) {
             return {
               ...prev,
               qi: Math.min(prev.qi + statsGained.qi, getCurrentRealm(QI_REALMS, prev.currentQiRealmIndex, prev.currentQiStage).qiCap),
-              curiosity: Math.min(prev.curiosity + (statsGained.curiosity || 0), prev.curiosityCap),
-              tenacity: Math.min(prev.tenacity + (statsGained.tenacity || 0), prev.tenacityCap),
+              curiosity: prev.curiosity + (statsGained.curiosity || 0),
+              tenacity: prev.tenacity + (statsGained.tenacity || 0),
+              knowledge: prev.knowledge + (statsGained.knowledge || 0), // No cap for knowledge yet
               lifespan: Math.min(prev.lifespan + (statsGained.lifespan || 0), prev.maxLifespan),
               meditationTypes: updatedMeditationTypes,
               lastUpdate: now
