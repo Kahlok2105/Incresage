@@ -76,11 +76,11 @@ export function useGameLoop(tickMs: number = 1_000) {
           // Calculate proper stat caps
           vitalityCap: parsed.vitalityCap || Math.max(
             100,
-            (100 * Math.max(1, parsed.currentQiRealmIndex ?? oldRealmIndex) * Math.max(1, parsed.currentBodyRealmIndex ?? 0)) + Math.sqrt(Math.max(0, migratedTenacity))
+            (100 * ((parsed.currentQiRealmIndex ?? oldRealmIndex) + 1) * ((parsed.currentBodyRealmIndex ?? 0) + 1)) + Math.sqrt(Math.max(0, migratedTenacity))
           ),
           spiritCap: parsed.spiritCap || Math.max(
             100,
-            (100 * Math.max(1, parsed.currentQiRealmIndex ?? oldRealmIndex) * Math.max(1, parsed.currentBodyRealmIndex ?? 0)) + Math.sqrt(Math.max(0, parsed.knowledge ?? 0))
+            (100 * ((parsed.currentQiRealmIndex ?? oldRealmIndex) + 1) * ((parsed.currentBodyRealmIndex ?? 0) + 1)) + Math.sqrt(Math.max(0, parsed.knowledge ?? 0))
           ),
 
           lifespan: parsed.lifespan ?? maxLifespan,
@@ -147,9 +147,9 @@ export function useGameLoop(tickMs: number = 1_000) {
     const BASE_VITALITY = 100;
     const BASE_SPIRIT = 100;
     
-    // Realm multipliers (minimum 1 for realm 0)
-    const qiMultiplier = Math.max(1, state.currentQiRealmIndex);
-    const bodyMultiplier = Math.max(1, state.currentBodyRealmIndex);
+    // Realm multipliers (proper 0-index scaling: realm 0 = 1x, realm 1 = 2x etc.)
+    const qiMultiplier = state.currentQiRealmIndex + 1;
+    const bodyMultiplier = state.currentBodyRealmIndex + 1;
     
     // ✅ Vitality formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(Tenacity)
     const vitalityCap = (BASE_VITALITY * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.tenacity));
@@ -277,12 +277,18 @@ export function useGameLoop(tickMs: number = 1_000) {
           knowledge: newKnowledge,
         });
 
+        // Calculate vitality & spirit regeneration (0.5% per second rounded up)
+        const vitalityRegen = Math.ceil(vitalityCap * 0.005) * deltaTimeSeconds;
+        const spiritRegen = Math.ceil(spiritCap * 0.005) * deltaTimeSeconds;
+
         return {
             ...prev,
             qi: Math.min(prev.qi + realmQiGain + meditationQiGain, qiRealm.qiCap), // Cap Qi at realm limit
             curiosity: prev.curiosity + curiosityGain,
             tenacity: newTenacity,
             knowledge: newKnowledge,
+            vitality: Math.min(prev.vitality + vitalityRegen, vitalityCap),
+            spirit: Math.min(prev.spirit + spiritRegen, spiritCap),
             vitalityCap,
             spiritCap,
             lifespan: Math.min(prev.lifespan + lifespanGain, prev.maxLifespan), // Cap lifespan at max
@@ -352,6 +358,11 @@ export function useGameLoop(tickMs: number = 1_000) {
       statsGained.lifespan = 0.1 * secondsAway;
     }
 
+    // 5. Calculate vitality & spirit regeneration for away time
+    const { vitalityCap, spiritCap } = calculateStatCaps(currentState);
+    statsGained.vitality = Math.ceil(vitalityCap * 0.005) * secondsAway;
+    statsGained.spirit = Math.ceil(spiritCap * 0.005) * secondsAway;
+
     return statsGained;
   };
 
@@ -383,12 +394,16 @@ export function useGameLoop(tickMs: number = 1_000) {
               updatedMeditationTypes = gainMeditationExperience(prev, statsGained.meditationExp);
             }
 
+            const { vitalityCap, spiritCap } = calculateStatCaps(prev);
+            
             return {
               ...prev,
               qi: Math.min(prev.qi + statsGained.qi, getCurrentRealm(QI_REALMS, prev.currentQiRealmIndex, prev.currentQiStage).qiCap),
               curiosity: prev.curiosity + (statsGained.curiosity || 0),
               tenacity: prev.tenacity + (statsGained.tenacity || 0),
               knowledge: prev.knowledge + (statsGained.knowledge || 0), // No cap for knowledge yet
+              vitality: Math.min(prev.vitality + (statsGained.vitality || 0), vitalityCap),
+              spirit: Math.min(prev.spirit + (statsGained.spirit || 0), spiritCap),
               lifespan: Math.min(prev.lifespan + (statsGained.lifespan || 0), prev.maxLifespan),
               meditationTypes: updatedMeditationTypes,
               lastUpdate: now
