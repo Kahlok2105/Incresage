@@ -644,3 +644,282 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
 }
+
+/* Combat System Styles */
+.combat-system {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(111, 66, 193, 0.15);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  min-height: 180px;
+}
+
+.combat-system h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--accent);
+}
+
+.combat-system p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.combat-start-btn {
+  align-self: flex-start;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 16px 30px rgba(220, 38, 38, 0.22);
+}
+
+.combat-start-btn:hover:not(:disabled) {
+  box-shadow: 0 20px 35px rgba(220, 38, 38, 0.26);
+}
+
+/* Combat active state */
+.combat-system.active {
+  border-color: rgba(220, 38, 38, 0.3);
+  box-shadow: 0 18px 40px rgba(220, 38, 38, 0.1);
+}
+
+/* Monster and Player Display */
+.monster-display,
+.player-display {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 12px;
+}
+
+.monster-display h3,
+.player-display h3 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.monster-display p {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0 0 8px 0;
+}
+
+/* HP Bars */
+.hp-bar {
+  position: relative;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hp-fill {
+  height: 100%;
+  border-radius: 12px;
+  transition: width 0.3s ease-out;
+  position: relative;
+}
+
+.monster-hp .hp-fill {
+  background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
+}
+
+.player-hp .hp-fill {
+  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+}
+
+.hp-bar span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* Combat Controls */
+.combat-controls {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.attack-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.2);
+}
+
+.attack-btn:hover:not(:disabled) {
+  box-shadow: 0 12px 25px rgba(220, 38, 38, 0.25);
+}
+
+.flee-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+  box-shadow: 0 8px 20px rgba(107, 114, 128, 0.2);
+}
+
+.flee-btn:hover:not(:disabled) {
+  box-shadow: 0 12px 25px rgba(107, 114, 128, 0.25);
+}
+
+/* Combat Log */
+.combat-log {
+  width: 100%;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.combat-log p {
+  margin: 4px 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  animation: fadeIn 0.3s ease;
+}
+
+.combat-log p.latest {
+  background: rgba(170, 59, 255, 0.08);
+  font-weight: 500;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar styling for combat log */
+.combat-log::-webkit-scrollbar {
+  width: 6px;
+}
+
+.combat-log::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.combat-log::-webkit-scrollbar-thumb {
+  background: rgba(170, 59, 255, 0.3);
+  border-radius: 3px;
+}
+
+.combat-log::-webkit-scrollbar-thumb:hover {
+  background: rgba(170, 59, 255, 0.5);
+}
+
+/* Monster List Styles */
+.monster-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.monster-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(170, 59, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.monster-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(170, 59, 255, 0.15);
+  border-color: rgba(170, 59, 255, 0.3);
+}
+
+.monster-card:active {
+  transform: translateY(0);
+}
+
+.monster-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.monster-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.difficulty-badge {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.diff-1 { background: #4ade80; }
+.diff-2 { background: #22c55e; }
+.diff-3 { background: #16a34a; }
+.diff-4 { background: #15803d; }
+.diff-5 { background: #f59e0b; }
+.diff-6 { background: #f97316; }
+.diff-7 { background: #ef4444; }
+.diff-8 { background: #dc2626; }
+.diff-9 { background: #b91c1c; }
+.diff-10 { background: #7f1d1d; }
+
+.monster-card-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.monster-card-rewards {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.monster-stats,
+.player-stats {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 4px;
+}
+
+.back-btn {
+  align-self: flex-start;
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+  box-shadow: 0 8px 20px rgba(107, 114, 128, 0.2);
+  padding: 10px 16px;
+  font-size: 0.9rem;
+}
+
+.back-btn:hover:not(:disabled) {
+  box-shadow: 0 12px 25px rgba(107, 114, 128, 0.25);
+}

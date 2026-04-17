@@ -30,6 +30,8 @@ import { calculateLifespan } from "../utils/gameMath";
     spirit: 0,
     vitalityCap: 100,
     spiritCap: 100,
+    attack: 5,
+    defense: 5,
     knowledge: 0,
 
     curiosity: 0,
@@ -41,6 +43,8 @@ import { calculateLifespan } from "../utils/gameMath";
     unlockedFeatures: [],
     meditationTypes: [...MEDITATION_TYPES],
     activeMeditationId: null,
+    bodyExp: 0,
+    bodyLevel: 1
   };
 
 export function useGameLoop(tickMs: number = 1_000) {
@@ -103,6 +107,8 @@ export function useGameLoop(tickMs: number = 1_000) {
         spirit: 0,
         vitalityCap: QI_REALMS[0].qiCap / 2,
         spiritCap: QI_REALMS[0].qiCap / 2,
+        attack: 5,
+        defense: 5,
         
         curiosity: 0,
         tenacity: 0,
@@ -113,6 +119,8 @@ export function useGameLoop(tickMs: number = 1_000) {
         unlockedFeatures: [],
         meditationTypes: [...MEDITATION_TYPES],
         activeMeditationId: null,
+        bodyExp: 0,
+        bodyLevel: 1
       };
 
   const [state, setState] = useState<PlayerState>(initialState);
@@ -433,20 +441,23 @@ export function useGameLoop(tickMs: number = 1_000) {
     setState((prev) => ({ ...prev, spiritStones: prev.spiritStones + amount }));
   };
 
-  /** Simulate a combat encounter with a random monster.
-   * The success chance is inversely proportional to the monster's difficulty.
-   * On success, the player gains the monster's stoneReward.
-   */
-  const encounterMonster = () => {
-    const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
-    // Simple success formula: 80% base chance reduced by 10% per difficulty level above 1.
-    const baseChance = 0.8;
-    const chance = Math.max(0.1, baseChance - (monster.difficulty - 1) * 0.1);
-    const success = Math.random() < chance;
-    if (success) {
-      addSpiritStones(monster.stoneReward);
-    }
-    return { monster, success };
+  /** Add body experience – typically called after a successful combat encounter. */
+  const addBodyExp = (amount: number) => {
+    setState((prev) => {
+      const newBodyExp = prev.bodyExp + amount;
+      // Calculate body level based on EXP (simple formula: level = floor(sqrt(exp/10)) + 1)
+      const newBodyLevel = Math.floor(Math.sqrt(newBodyExp / 10)) + 1;
+      return { 
+        ...prev, 
+        bodyExp: newBodyExp,
+        bodyLevel: newBodyLevel
+      };
+    });
+  };
+
+  /** Get a random monster from the pool */
+  const getRandomMonster = () => {
+    return MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
   };
 
   /** Set active meditation type */
@@ -630,11 +641,12 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
   return {
     state,
     addSpiritStones,
+    addBodyExp,
+    getRandomMonster,
     tryBreakthrough,
     tryBreakthroughGuaranteed,
     isMeditating,
     toggleMeditation,
-    encounterMonster,
     qiPerSecond,
     usableQi,
     totalQi,

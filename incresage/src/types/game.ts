@@ -81,6 +81,10 @@ export interface MeditationType {
     
     /** Maximum spirit capacity */
     spiritCap: number;
+    /** Attack power (placeholder for future stat source) */
+    attack: number;
+    /** Defense - flat damage reduction (placeholder for future stat source) */
+    defense: number;
     
     /**Mental Ability */
     knowledge: number;
@@ -97,7 +101,53 @@ export interface MeditationType {
     unlockedFeatures: string[]; // e.g., ["combat", "meditation", "bodyCultivation"]
     /** Available meditation types */
     meditationTypes: MeditationType[];
-    /** Currently active meditation type ID, or null if none */
-    activeMeditationId: string | null;
-  }
+  /** Currently active meditation type ID, or null if none */
+  activeMeditationId: string | null;
+  
+  /** Body cultivation experience (for future body cultivation system) */
+  bodyExp: number;
+  /** Current body cultivation level */
+  bodyLevel: number;
+}
+
+/**
+ * Monster core tier definition
+ */
+export interface MonsterCore {
+  tier: number; // 1-10, corresponds to difficulty tiers
+  amount: number;
+}
+
+/**
+ * Monster drop table
+ */
+export interface MonsterDrops {
+  spiritStones: number;
+  monsterCores: MonsterCore[];
+}
+
+/**
+ * Monster definition for combat encounters
+ */
+export interface Monster {
+  id: string;
+  name: string;
+  hp: number;
+  attack: number;
+  expReward: number;
+  difficulty: number; // 1-100 scale
+  drops: MonsterDrops;
+}
+
+/**
+ * Combat state during a monster encounter
+ */
+export interface CombatState {
+  isActive: boolean;
+  monster: Monster | null;
+  playerHP: number;
+  monsterHP: number;
+  log: string[];
+  isPlayerTurn: boolean;
+}
 

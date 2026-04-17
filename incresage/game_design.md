@@ -91,11 +91,24 @@ export interface CultivationRealm {
 
 ### Monster (`src/constants/gameData.ts`)
 ```typescript
+export interface MonsterCore {
+  tier: number;                     // 1-10, corresponds to difficulty tiers
+  amount: number;
+}
+
+export interface MonsterDrops {
+  spiritStones: number;             // Spirit stones on victory
+  monsterCores: MonsterCore[];      // Monster cores dropped
+}
+
 export interface Monster {
   id: string;
   name: string;
-  stoneReward: number;              // Spirit stones on victory
-  difficulty: number;               // Affects success chance
+  hp: number;                       // Monster health points
+  attack: number;                   // Monster attack power
+  expReward: number;                // Body cultivation EXP on victory
+  difficulty: number;               // 1-100 scale
+  drops: MonsterDrops;              // Drop table
 }
 ```
 
@@ -230,9 +243,40 @@ spiritCap = (100 × (qiRealm+1) × (bodyRealm+1)) + sqrt(knowledge)
 ### 3.6 Combat System
 
 **Monster Encounters:**
-- Available monsters: Spirit Wisp (difficulty 1), Earth Golem (difficulty 2), Celestial Beast (difficulty 5)
-- Success chance: `80% - 10% × (difficulty - 1)`, minimum 10%
-- Rewards: Spirit stones (5, 20, or 100 based on monster)
+- Unlocked at: Qi Realm 1 (Qi Condensation)
+- Turn-based combat with HP tracking
+- 10 unique monsters available from the start (player selects which to fight)
+- Player progresses through monsters at their own pace
+
+**Player Combat Stats:**
+- **Attack:** Base 5 (placeholder for future stat source)
+- **Defense:** Base 5 (placeholder for future stat source) - reduces incoming damage by flat amount
+
+**Monster Stats:**
+| Monster | Difficulty | HP | Attack | EXP | Spirit Stones | Monster Cores |
+|---------|------------|-----|--------|-----|---------------|---------------|
+| Spirit Wisp | 1 | 50 | 5 | 10 | 5 | 1x Tier 1 |
+| Forest Wolf | 2 | 100 | 10 | 20 | 10 | 1x Tier 1 |
+| Earth Golem | 3 | 200 | 15 | 35 | 15 | 1x Tier 1 |
+| Fire Imp | 4 | 150 | 25 | 50 | 20 | 1x Tier 1 |
+| Shadow Stalker | 5 | 300 | 30 | 75 | 30 | 1x Tier 1 |
+| Rock Elemental | 6 | 500 | 35 | 100 | 40 | 1x Tier 1 |
+| Wind Spirit | 7 | 400 | 50 | 150 | 50 | 1x Tier 1 |
+| Ice Golem | 8 | 800 | 60 | 200 | 75 | 1x Tier 1 |
+| Thunder Beast | 9 | 700 | 80 | 300 | 100 | 1x Tier 1 |
+| Ancient Guardian | 10 | 1200 | 100 | 500 | 150 | 2x Tier 1 |
+
+**Combat Mechanics:**
+- Player damage: `playerAttack × (0.8 to 1.2 variance)`
+- Monster damage: `max(1, monsterAttack - playerDefense) × (0.8 to 1.2 variance)`
+- Turn-based: Player attacks first, then monster counterattacks
+- Victory: Gain spirit stones, body EXP, and monster cores
+- Defeat: Monster escapes, player can try again
+
+**Monster Core System:**
+- Tier 1 cores: Dropped by difficulty 1-10 monsters
+- Future tiers: Higher tiers for higher difficulty monsters (planned)
+- Used for: Body cultivation (future implementation)
 
 ### 3.7 Persistence & Offline Progress
 
@@ -284,8 +328,7 @@ Where realmNumber accounts for both realm index and stage progression.
 | **Status** | Displays realm, Qi, spirit stones, stats, breakthrough button |
 | **MeditationPanel** | Shows available meditation techniques, activation, leveling, stats |
 | **MeditationControls** | Legacy meditation toggle (backwards compatibility) |
-| **CombatControls** | Button to challenge random monsters |
-| **MonsterEncounter** | Detailed encounter UI (unlocked at Qi Realm 1) |
+| **CombatSystem** | Full combat UI with HP bars, attack/flee buttons, combat log (unlocked at Qi Realm 1) |
 | **AlchemyPanel** | Placeholder for alchemy system (unlocked at Qi Realm 2) |
 | **UnlockToast** | Brief notification when new features are unlocked |
 | **WelcomeModal** | Shows offline progress summary when returning |
@@ -304,7 +347,7 @@ The root component wires together:
 
 **Feature Gating:**
 ```tsx
-{state.unlockedFeatures.includes("monster") && <MonsterEncounter />}
+{state.unlockedFeatures.includes("monster") && <CombatSystem />}
 {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
 ```
 
@@ -323,8 +366,7 @@ The root component wires together:
 | `src/components/Status.tsx` | Player status display and breakthrough UI |
 | `src/components/MeditationPanel.tsx` | Meditation system UI with techniques and leveling |
 | `src/components/MeditationControls.tsx` | Legacy meditation toggle |
-| `src/components/CombatControls.tsx` | Basic combat encounter button |
-| `src/components/MonsterEncounter.tsx` | Advanced monster encounter UI |
+| `src/components/CombatSystem.tsx` | Full combat UI with HP bars, turn-based combat, combat log |
 | `src/components/AlchemyPanel.tsx` | Placeholder for future alchemy system |
 | `src/components/UnlockToast.tsx` | Feature unlock notification |
 | `src/components/WelcomeModal.tsx` | Offline progress summary modal |

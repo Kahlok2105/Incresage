@@ -3,8 +3,7 @@ import "./App.css";
 import { useGameLoop } from "./hooks/useGameLoop";
 import { Status } from "./components/Status";
 import { MeditationPanel } from "./components/MeditationPanel";
-import { CombatControls } from "./components/CombatControls";
-import { MonsterEncounter } from "./components/MonsterEncounter";
+import { CombatSystem } from "./components/CombatSystem";
 import { AlchemyPanel } from "./components/AlchemyPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
@@ -18,7 +17,8 @@ export default function App() {
     state,
     tryBreakthrough,
     tryBreakthroughGuaranteed,
-    encounterMonster,
+    addSpiritStones,
+    addBodyExp,
     usableQi,
     totalQi,
     resetGame,
@@ -47,6 +47,7 @@ export default function App() {
       }
     }
   }, [state.unlockedFeatures]);
+
 
   return (
     <div className="app">
@@ -82,10 +83,16 @@ export default function App() {
           setActiveMeditation={setActiveMeditation}
           getCurrentMeditationStats={getCurrentMeditationStats}
         />
-        <CombatControls encounterMonster={encounterMonster} />
-        {/* Render monster encounter UI when unlocked */}
+        {/* Render combat system when monster feature is unlocked */}
         {state.unlockedFeatures.includes("monster") && (
-          <MonsterEncounter encounterMonster={encounterMonster} />
+          <CombatSystem
+            playerAttack={state.attack}
+            playerDefense={state.defense}
+            addSpiritStones={addSpiritStones}
+            addBodyExp={addBodyExp}
+            playerVitality={state.vitality}
+            playerVitalityCap={state.vitalityCap}
+          />
         )}
         {/* Render alchemy UI when unlocked */}
         {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
@@ -110,4 +117,3 @@ export default function App() {
     </div>
   );
 }
-
