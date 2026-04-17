@@ -25,11 +25,12 @@ export const Status: React.FC<{
   };
   // Updated to reflect actual return shape from useGameLoop
   tryBreakthrough: () => { success: boolean; chance: number };
+  tryBreakthroughGuaranteed: () => { success: boolean; chance: number };
   usableQi: number;
   totalQi: number;
   resetGame: () => void;
   addTestQi?: (percentage: number) => void;
-}> = ({ state, tryBreakthrough, usableQi, totalQi, resetGame, addTestQi }) => {
+}> = ({ state, tryBreakthrough, tryBreakthroughGuaranteed, usableQi, totalQi, resetGame, addTestQi }) => {
   // Get current realms
   const currentQiRealm = getCurrentRealm(QI_REALMS, state.currentQiRealmIndex, state.currentQiStage);
   const currentBodyRealm = getCurrentRealm(BODY_REALMS, state.currentBodyRealmIndex, state.currentBodyStage);
@@ -114,6 +115,13 @@ export const Status: React.FC<{
             +10% Qi (Test)
           </button>
         )}
+        <button
+          disabled={!canAttempt}
+          onClick={tryBreakthroughGuaranteed}
+          style={{ background: '#FFD700', fontSize: '0.8rem', padding: '8px 12px', marginLeft: '8px' }}
+        >
+          100% Breakthrough
+        </button>
       </div>
     </div>
   );

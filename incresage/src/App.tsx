@@ -17,6 +17,7 @@ export default function App() {
   const {
     state,
     tryBreakthrough,
+    tryBreakthroughGuaranteed,
     encounterMonster,
     usableQi,
     totalQi,
@@ -58,6 +59,13 @@ export default function App() {
                   showSuccess("🎉 Breakthrough Successful! Welcome to the next realm!");
                 } else {
                   showFailure("⚠️ Breakthrough Failed! You lost 50% of your Qi.");
+                }
+                return result;
+              }}
+              tryBreakthroughGuaranteed={() => {
+                const result = tryBreakthroughGuaranteed();
+                if (result.success) {
+                  showSuccess("🎉 Guaranteed Breakthrough Successful! Welcome to the next realm!");
                 }
                 return result;
               }}

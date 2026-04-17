@@ -561,8 +561,59 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
          };
        }
     });
-  return { success, chance };
-};
+   return { success, chance };
+ };
+
+  /** Attempt to breakthrough to the next realm with 100% success chance (debug/cheat).
+   * Returns true if the breakthrough succeeded, false otherwise.
+   */
+  const tryBreakthroughGuaranteed = (): { success: boolean; chance: number } => {
+    const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
+    const nextRealm = QI_REALMS[currentIndex + 1];
+    
+    if (!nextRealm) return { success: false, chance: 0 };
+
+    const chance = calculateBreakthroughChance();
+    const canAttempt = state.qi >= nextRealm.qiRequired / 2;
+
+    if (!canAttempt) return { success: false, chance };
+    
+    // Always succeed with 100% chance
+    const success = true;
+
+    setState((prev) => {
+      const newIndex = currentIndex + 1;
+      const newRealmIndex = Math.floor(newIndex / 3);
+      const newStage = newIndex % 3;
+      
+      const newFeatures = [...prev.unlockedFeatures];
+
+      // Progression Logic:
+      if (newRealmIndex >= 1 && !newFeatures.includes("monster")) newFeatures.push("monster");
+      if (newRealmIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
+      if (newRealmIndex >= 3 && !newFeatures.includes("bodyCultivation")) newFeatures.push("bodyCultivation");
+      
+      const newMaxLifespan = calculateLifespan(newIndex);
+      const { vitalityCap, spiritCap } = calculateStatCaps({
+        ...prev,
+        currentQiRealmIndex: newRealmIndex,
+        currentQiStage: newStage,
+      });
+      
+      return {
+        ...prev,
+        currentQiRealmIndex: newRealmIndex,
+        currentQiStage: newStage,
+        qi: 0,
+        vitalityCap,
+        spiritCap,
+        maxLifespan: newMaxLifespan,
+        unlockedFeatures: newFeatures,        
+      };
+    });
+    
+    return { success, chance: 1 };
+  };
 
   /** Add a percentage of total Qi for testing purposes */
   const addTestQi = (percentage: number) => {
@@ -580,6 +631,7 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     state,
     addSpiritStones,
     tryBreakthrough,
+    tryBreakthroughGuaranteed,
     isMeditating,
     toggleMeditation,
     encounterMonster,
