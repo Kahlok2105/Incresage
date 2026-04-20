@@ -188,6 +188,7 @@
   box-shadow: 0 30px 70px rgba(93, 50, 158, 0.08);
   padding: 32px;
   backdrop-filter: blur(18px);
+  box-sizing: border-box;
 }
 
 .status-panel .status {
@@ -248,12 +249,14 @@
   flex-wrap: nowrap !important;
   gap: 24px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .cultivation-section .qi-cultivation-panel,
 .cultivation-section .body-cultivation-panel {
   flex: 1;
   min-width: 0;
+  box-sizing: border-box;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(111, 66, 193, 0.12);
   border-radius: 28px;
@@ -295,7 +298,9 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
-  grid-column: 1 / -1;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .meditation-panel h2 {
@@ -310,6 +315,7 @@
   padding: 12px;
   width: 100%;
   margin-bottom: 12px;
+  box-sizing: border-box;
 }
 
 .active-meditation-stats h3 {

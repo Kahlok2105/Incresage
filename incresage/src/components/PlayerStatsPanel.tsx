@@ -36,12 +36,13 @@ export const PlayerStatsPanel: React.FC<{
   return (
     <div className="player-stats-panel" style={{ 
       padding: '16px', 
-      margin: '0', 
+      margin: '0 auto', 
       border: '2px solid #4a90d9', 
       borderRadius: '10px',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
       color: '#f0e6d3',
-      width: '100%'
+      width: '100%',
+      boxSizing: 'border-box'
     }}>
       <h2 style={{ color: '#6bb5ff', marginBottom: '12px', fontSize: '1rem' }}>Player Stats</h2>
       
