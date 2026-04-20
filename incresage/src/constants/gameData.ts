@@ -1,4 +1,5 @@
 import type { Monster, MonsterCore } from "../types/game";
+import { calculateMonsterExp, calculateMonsterTP } from "../utils/gameMath";
 
 /**
  * Monster definitions for combat encounters
@@ -11,8 +12,9 @@ export const MONSTERS: Monster[] = [
     name: "Spirit Wisp",
     hp: 50,
     attack: 5,
-    expReward: 10,
+    expReward: calculateMonsterExp(1),
     difficulty: 1,
+    tpReward: calculateMonsterTP(1),
     drops: {
       spiritStones: 5,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -24,8 +26,9 @@ export const MONSTERS: Monster[] = [
     name: "Forest Wolf",
     hp: 100,
     attack: 10,
-    expReward: 20,
+    expReward: calculateMonsterExp(2),
     difficulty: 2,
+    tpReward: calculateMonsterTP(2),
     drops: {
       spiritStones: 10,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -37,8 +40,9 @@ export const MONSTERS: Monster[] = [
     name: "Earth Golem",
     hp: 200,
     attack: 15,
-    expReward: 35,
+    expReward: calculateMonsterExp(3),
     difficulty: 3,
+    tpReward: calculateMonsterTP(3),
     drops: {
       spiritStones: 15,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -50,8 +54,9 @@ export const MONSTERS: Monster[] = [
     name: "Fire Imp",
     hp: 150,
     attack: 25,
-    expReward: 50,
+    expReward: calculateMonsterExp(4),
     difficulty: 4,
+    tpReward: calculateMonsterTP(4),
     drops: {
       spiritStones: 20,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -63,8 +68,9 @@ export const MONSTERS: Monster[] = [
     name: "Shadow Stalker",
     hp: 300,
     attack: 30,
-    expReward: 75,
+    expReward: calculateMonsterExp(5),
     difficulty: 5,
+    tpReward: calculateMonsterTP(5),
     drops: {
       spiritStones: 30,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -76,8 +82,9 @@ export const MONSTERS: Monster[] = [
     name: "Rock Elemental",
     hp: 500,
     attack: 35,
-    expReward: 100,
+    expReward: calculateMonsterExp(6),
     difficulty: 6,
+    tpReward: calculateMonsterTP(6),
     drops: {
       spiritStones: 40,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -89,8 +96,9 @@ export const MONSTERS: Monster[] = [
     name: "Wind Spirit",
     hp: 400,
     attack: 50,
-    expReward: 150,
+    expReward: calculateMonsterExp(7),
     difficulty: 7,
+    tpReward: calculateMonsterTP(7),
     drops: {
       spiritStones: 50,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -102,8 +110,9 @@ export const MONSTERS: Monster[] = [
     name: "Ice Golem",
     hp: 800,
     attack: 60,
-    expReward: 200,
+    expReward: calculateMonsterExp(8),
     difficulty: 8,
+    tpReward: calculateMonsterTP(8),
     drops: {
       spiritStones: 75,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -115,8 +124,9 @@ export const MONSTERS: Monster[] = [
     name: "Thunder Beast",
     hp: 700,
     attack: 80,
-    expReward: 300,
+    expReward: calculateMonsterExp(9),
     difficulty: 9,
+    tpReward: calculateMonsterTP(9),
     drops: {
       spiritStones: 100,
       monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
@@ -128,8 +138,9 @@ export const MONSTERS: Monster[] = [
     name: "Ancient Guardian",
     hp: 1200,
     attack: 100,
-    expReward: 500,
+    expReward: calculateMonsterExp(10),
     difficulty: 10,
+    tpReward: calculateMonsterTP(10),
     drops: {
       spiritStones: 150,
       monsterCores: [{ tier: 1, amount: 2 }] as MonsterCore[]

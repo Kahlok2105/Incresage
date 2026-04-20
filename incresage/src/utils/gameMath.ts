@@ -90,3 +90,38 @@ export const calculateQiCap = (realmIndex: number, stage: number = 0): number =>
 export const calculateQiRequired = (realmIndex: number, stage: number = 0): number => {
   return Math.round(calculateQiCap(realmIndex, stage) / 5);
 };
+
+/**
+ * Calculate experience required to reach next body cultivation level
+ */
+export const calculateBodyExpRequired = (level: number): number => {
+  return 100 * Math.floor(Math.pow(level, 1.8));
+};
+
+/**
+ * Calculate tenacity required for body breakthrough at current level
+ */
+export const calculateTenacityRequired = (level: number): number => {
+  return 50 * Math.pow(1.8, level);
+};
+
+/**
+ * Calculate tribulation points required for body breakthrough at current level
+ */
+export const calculateTPRequired = (level: number): number => {
+  return 5 * Math.pow(level, 1.2);
+};
+
+/**
+ * Calculate experience reward from defeating a monster
+ */
+export const calculateMonsterExp = (difficulty: number): number => {
+  return Math.floor(Math.pow(difficulty, 1.5)) * 10;
+};
+
+/**
+ * Calculate tribulation points reward from defeating a monster (one-time only)
+ */
+export const calculateMonsterTP = (difficulty: number): number => {
+  return Math.floor(Math.pow(difficulty, 1.5));
+};

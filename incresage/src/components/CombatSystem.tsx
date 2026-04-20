@@ -8,7 +8,8 @@ interface CombatSystemProps {
   playerVitality: number;
   playerVitalityCap: number;
   addSpiritStones: (amount: number) => void;
-  addBodyExp: (amount: number) => void;
+  addBodyExpNew: (amount: number) => void;
+  addTribulationPoints: (monster: Monster) => void;
 }
 
 export const CombatSystem: React.FC<CombatSystemProps> = ({
@@ -17,7 +18,8 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
   playerVitality,
   playerVitalityCap,
   addSpiritStones,
-  addBodyExp
+  addBodyExpNew,
+  addTribulationPoints
 }) => {
   const [combatState, setCombatState] = useState<CombatState>({
     isActive: false,
@@ -30,102 +32,113 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
 
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
 
-  // Start combat with a specific monster
+  //1. Start combat with a specific monster
   const startCombat = (monster: Monster) => {
-    setSelectedMonster(monster);
-    setCombatState({
-      isActive: true,
-      monster,
-      playerHP: playerVitality,
-      monsterHP: monster.hp,
-      log: [`A wild ${monster.name} appears! (Difficulty: ${monster.difficulty})`],
-      isPlayerTurn: true
-    });
-  };
+      setSelectedMonster(monster);
+      setCombatState({
+        isActive: true,
+        monster,
+        playerHP: playerVitality, // Initialize from prop
+        monsterHP: monster.hp,    // Initialize from monster data
+        log: [`A wild Tier ${monster.difficulty} ${monster.name} appears!`],
+        isPlayerTurn: true
+      });
+    };
 
-  // Player attacks the monster
+  //2. Player attacks the monster
+
   const playerAttackAction = () => {
     if (!combatState.isActive || !combatState.isPlayerTurn || !combatState.monster) return;
 
-    // Calculate damage: player attack - monster defense (min 1)
-    // Monsters have no defense stat, so damage = player attack with variance
-    const baseDamage = playerAttack;
-    const damage = Math.floor(baseDamage * (0.8 + Math.random() * 0.4));
-    const newMonsterHP = Math.max(0, combatState.monsterHP - damage);
+    const damage = Math.floor(playerAttack * (0.8 + Math.random() * 0.4));
+    
+    // Use functional update to ensure we have the latest monsterHP
+    setCombatState(prev => {
+      const newMonsterHP = Math.max(0, prev.monsterHP - damage);
+      const newLog = [...prev.log, `You deal ${damage} damage to ${prev.monster?.name}!`];
 
-    const newLog = [...combatState.log, `You deal ${damage} damage to ${combatState.monster.name}!`];
+      if (newMonsterHP <= 0) {
+        // Victory Logic
+        const monster = prev.monster!;
+        const tpGained = monster.tpReward || 0;
 
-    // Check if monster is defeated
-    if (newMonsterHP <= 0) {
-      const monster = combatState.monster;
-      const stonesGained = monster.drops.spiritStones;
-      const expGained = monster.expReward;
+        // 1. Call parent reward functions
+        setTimeout(() => {
 
-      // Award drops
-      addSpiritStones(stonesGained);
-      addBodyExp(expGained);
+        addSpiritStones(monster.drops.spiritStones);
+        addBodyExpNew(monster.expReward);
+        addTribulationPoints(monster);
+        }, 0); // Delay to allow log to update before rewards are added
 
-      setCombatState({
-        ...combatState,
-        monsterHP: 0,
-        log: [
-          ...newLog,
-          `🎉 Victory! Defeated ${monster.name}!`,
-          `Received ${stonesGained} spirit stones and ${expGained} body EXP!`,
-          `Received ${monster.drops.monsterCores.map(c => `${c.amount}x Tier ${c.tier} Monster Core`).join(", ")}`
-        ],
-        isActive: false
-      });
+        // 2. Construct the reward messages
+        const tpMessage = tpGained > 0 
+          ? ` and ${tpGained} Tribulation Points!` 
+          : " (TP already collected)";
 
-      return;
-    }
+        const coreMessage = monster.drops.monsterCores.length > 0
+          ? `Received ${monster.drops.monsterCores.map(c => `${c.amount}x Tier ${c.tier} Core`).join(", ")}`
+          : "No cores found";
 
-    // Monster's turn to attack
-    setCombatState({
-      ...combatState,
-      monsterHP: newMonsterHP,
-      isPlayerTurn: false,
-      log: newLog
+        return {
+          ...prev,
+          monsterHP: 0,
+          isActive: false,
+          log: [
+            ...newLog,
+            `Defeated ${monster.name}!`,
+            `Received ${monster.drops.spiritStones} spirit stones and ${monster.expReward} body EXP!`,
+            `${coreMessage}${tpMessage}`
+          ],
+        };
+      }
+
+      return {
+        ...prev,
+        monsterHP: newMonsterHP,
+        isPlayerTurn: false, // Switch turn to disable button
+        log: newLog
+      };
     });
+  }
 
-    // Monster counterattacks after a short delay
-    setTimeout(() => monsterAttack(newMonsterHP), 500);
+
+  //3. Monster attacks the player
+
+  const monsterAttack = () => {
+    setCombatState(prev => {
+      if (!prev.isActive || !prev.monster) return prev;
+
+      const baseDamage = Math.max(1, prev.monster.attack - playerDefense);
+      const damage = Math.floor(baseDamage * (0.8 + Math.random() * 0.4));
+      const newPlayerHP = Math.max(0, prev.playerHP - damage);
+      const newLog = [...prev.log, `${prev.monster.name} deals ${damage} damage to you!`];
+
+      if (newPlayerHP <= 0) {
+        return {
+          ...prev,
+          playerHP: 0,
+          isActive: false,
+          log: [...newLog, "💀 You were defeated!"]
+        };
+      }
+
+      return {
+        ...prev,
+        playerHP: newPlayerHP,
+        isPlayerTurn: true, // Re-enable player button
+        log: newLog
+      };
+    });
   };
 
-  // Monster attacks the player
-  const monsterAttack = (currentMonsterHP: number) => {
-    if (!combatState.monster) return;
-
-    // Calculate monster damage: monster attack - player defense (min 1)
-    const baseDamage = Math.max(1, combatState.monster.attack - playerDefense);
-    const damage = Math.floor(baseDamage * (0.8 + Math.random() * 0.4));
-    const newPlayerHP = Math.max(0, combatState.playerHP - damage);
-
-    const newLog = [...combatState.log, `${combatState.monster.name} deals ${damage} damage to you!`];
-
-    // Check if player is defeated
-    if (newPlayerHP <= 0) {
-      setCombatState({
-        ...combatState,
-        playerHP: 0,
-        isPlayerTurn: true,
-        log: [
-          ...newLog,
-          "💀 You were defeated! The monster escapes...",
-          "Rest and try again!"
-        ],
-        isActive: false
-      });
-      return;
-    }
-
-    setCombatState({
-      ...combatState,
-      playerHP: newPlayerHP,
-      isPlayerTurn: true,
-      log: newLog
-    });
-  };
+  useEffect(() => {
+  if (!combatState.isPlayerTurn && combatState.isActive) {
+    const timer = setTimeout(() => {
+      monsterAttack();
+    }, 500);
+    return () => clearTimeout(timer);
+  }
+}, [combatState.isPlayerTurn, combatState.isActive]);
 
   // Flee from combat
   const fleeCombat = () => {
@@ -237,8 +250,12 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       {/* Combat Controls */}
       {combatState.isActive && combatState.isPlayerTurn && (
         <div className="combat-controls">
-          <button onClick={playerAttackAction} className="attack-btn">
-            ⚔️ Attack
+          <button 
+          onClick={playerAttackAction} 
+          className="attack-btn"
+          disabled={!combatState.isPlayerTurn || !combatState.isActive}
+        >
+          {combatState.isPlayerTurn ? "⚔️ Attack" : "⏳ Monster is attacking..."}
           </button>
           <button onClick={fleeCombat} className="flee-btn">
             🏃 Flee

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import type { PlayerState } from "../types/game";
+import type { PlayerState, Monster } from "../types/game";
 import { MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
-import { QI_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
-import { calculateLifespan } from "../utils/gameMath";
+import { QI_REALMS, BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
+import { calculateLifespan, calculateBodyExpRequired, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
 
 /**
  * Core game‑loop hook.
@@ -44,7 +44,9 @@ import { calculateLifespan } from "../utils/gameMath";
     meditationTypes: [...MEDITATION_TYPES],
     activeMeditationId: null,
     bodyExp: 0,
-    bodyLevel: 1
+    bodyLevel: 1,
+    tribulationPoints: 0,
+    defeatedMonsters: []
   };
 
 export function useGameLoop(tickMs: number = 1_000) {
@@ -120,7 +122,9 @@ export function useGameLoop(tickMs: number = 1_000) {
         meditationTypes: [...MEDITATION_TYPES],
         activeMeditationId: null,
         bodyExp: 0,
-        bodyLevel: 1
+        bodyLevel: 1,
+        tribulationPoints: 0,
+        defeatedMonsters: []
       };
 
   const [state, setState] = useState<PlayerState>(initialState);
@@ -638,13 +642,138 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     });
   };
 
+  /** Add tribulation points from defeating a monster (one-time per monster type) */
+  const addTribulationPoints = (monster: Monster) => {
+    setState((prev) => {
+      // Check if monster has already been defeated
+      const defeatedMonsters = prev.defeatedMonsters ?? [] ;
+      if (defeatedMonsters.includes(monster.id)) {
+        return prev; // Already defeated, no TP gain
+      }
+
+      const tpGained = monster.tpReward || 0;
+      return {
+        ...prev,
+        tribulationPoints: prev.tribulationPoints + tpGained,
+        defeatedMonsters: [...defeatedMonsters, monster.id]
+      };
+    });
+  };
+
+  /** Calculate body stage index (0-17) */
+  const getBodyStageIndex = () => {
+    return state.currentBodyRealmIndex * 3 + state.currentBodyStage;
+  };
+
+  /** Calculate body breakthrough chance */
+  const calculateBodyBreakthroughChance = () => {
+    const bodyStageIndex = getBodyStageIndex();
+    const nextBodyRealm = BODY_REALMS[bodyStageIndex + 1];
+    
+    if (!nextBodyRealm) return 0;
+
+    const requiredBodyLevel = bodyStageIndex + 1;
+    const tenacityRequired = calculateTenacityRequired(state.bodyLevel);
+    const tpRequired = calculateTPRequired(state.bodyLevel);
+    
+    const tenacityRatio = state.tenacity / tenacityRequired;
+    const tpRatio = state.tribulationPoints / tpRequired;
+    const levelRatio = Math.min(state.bodyLevel / requiredBodyLevel, 1.5);
+    
+    return nextBodyRealm.baseSuccessRate * tenacityRatio * tpRatio * levelRatio;
+  };
+
+  /** Attempt body breakthrough */
+  const tryBodyBreakthrough = (): { success: boolean; chance: number } => {
+    const bodyStageIndex = getBodyStageIndex();
+    const nextBodyRealm = BODY_REALMS[bodyStageIndex + 1];
+    
+    if (!nextBodyRealm) return { success: false, chance: 0 };
+
+    const requiredBodyLevel = bodyStageIndex + 1;
+    const tenacityRequired = calculateTenacityRequired(state.bodyLevel);
+    const tpRequired = calculateTPRequired(state.bodyLevel);
+    
+    // Check if requirements are met (at least 50% of each requirement)
+    const canAttempt = state.tenacity >= tenacityRequired * 0.5 && 
+                       state.tribulationPoints >= tpRequired * 0.5;
+
+    const chance = calculateBodyBreakthroughChance();
+    
+    if (!canAttempt) return { success: false, chance };
+
+    // Roll the dice
+    const roll = Math.random();
+    const success = roll < chance;
+
+    setState((prev) => {
+      if (success) {
+        const newIndex = bodyStageIndex + 1;
+        const newRealmIndex = Math.floor(newIndex / 3);
+        const newStage = newIndex % 3;
+        
+        const { vitalityCap, spiritCap } = calculateStatCaps({
+          ...prev,
+          currentBodyRealmIndex: newRealmIndex,
+          currentBodyStage: newStage,
+        });
+
+        return {
+          ...prev,
+          currentBodyRealmIndex: newRealmIndex,
+          currentBodyStage: newStage,
+          vitalityCap,
+          spiritCap,
+          // Consume resources on success
+          tribulationPoints: 0,
+          tenacity: 0
+        };
+      } else {
+        // Failure penalty: lose 30% tenacity and 1 body level
+        const newTenacity = prev.tenacity * 0.7;
+        const newBodyLevel = Math.max(1, prev.bodyLevel - 1);
+        
+        return {
+          ...prev,
+          tenacity: newTenacity,
+          bodyLevel: newBodyLevel
+        };
+      }
+    });
+
+    return { success, chance };
+  };
+
+  /** Add body experience with new formula */
+  const addBodyExpNew = (amount: number) => {
+    setState((prev) => {
+      const newBodyExp = prev.bodyExp + amount;
+      // Calculate body level from EXP using inverse of: expRequired = 100 * floor(level^1.8)
+      // level = floor((exp / 100)^(1/1.8))
+      let newBodyLevel = 1;
+      if (newBodyExp > 0) {
+        newBodyLevel = Math.floor(Math.pow(newBodyExp / 100, 1 / 1.8)) + 1;
+      }
+      return { 
+        ...prev, 
+        bodyExp: newBodyExp,
+        bodyLevel: newBodyLevel
+      };
+    });
+  };
+
   return {
     state,
     addSpiritStones,
     addBodyExp,
+    addBodyExpNew,
+    addTribulationPoints,
     getRandomMonster,
     tryBreakthrough,
     tryBreakthroughGuaranteed,
+    tryBodyBreakthrough,
+    calculateBodyBreakthroughChance,
+    getBodyStageIndex,
     isMeditating,
     toggleMeditation,
     qiPerSecond,

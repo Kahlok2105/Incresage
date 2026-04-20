@@ -5,6 +5,7 @@ import { Status } from "./components/Status";
 import { MeditationPanel } from "./components/MeditationPanel";
 import { CombatSystem } from "./components/CombatSystem";
 import { AlchemyPanel } from "./components/AlchemyPanel";
+import { BodyCultivationPanel } from "./components/BodyCultivationPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
 import { WelcomeModal } from "./components/WelcomeModal";
@@ -19,6 +20,8 @@ export default function App() {
     tryBreakthroughGuaranteed,
     addSpiritStones,
     addBodyExp,
+    addBodyExpNew,
+    addTribulationPoints,
     usableQi,
     totalQi,
     resetGame,
@@ -28,7 +31,10 @@ export default function App() {
     meditationTypes,
     activeMeditationId,
     welcomeData,
-    clearWelcomeData
+    clearWelcomeData,
+    tryBodyBreakthrough,
+    calculateBodyBreakthroughChance,
+    getBodyStageIndex
   } = useGameLoop();
 
   // Notification system
@@ -89,13 +95,29 @@ export default function App() {
             playerAttack={state.attack}
             playerDefense={state.defense}
             addSpiritStones={addSpiritStones}
-            addBodyExp={addBodyExp}
+            addBodyExpNew={addBodyExpNew}
+            addTribulationPoints={addTribulationPoints}
             playerVitality={state.vitality}
             playerVitalityCap={state.vitalityCap}
           />
         )}
         {/* Render alchemy UI when unlocked */}
         {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
+        {/* Body Cultivation Panel - always visible */}
+        <BodyCultivationPanel
+          state={state}
+          tryBodyBreakthrough={() => {
+            const result = tryBodyBreakthrough();
+            if (result.success) {
+              showSuccess("🎉 Body Breakthrough Successful! Your physique has advanced!");
+            } else if (result.chance > 0) {
+              showFailure("⚠️ Body Breakthrough Failed! You lost 30% tenacity and 1 body level.");
+            }
+            return result;
+          }}
+          calculateBodyBreakthroughChance={calculateBodyBreakthroughChance}
+          getBodyStageIndex={getBodyStageIndex}
+        />
         {/* Unlock toast notification */}
         <UnlockToast feature={lastFeature} />
         </main>

@@ -108,6 +108,10 @@ export interface MeditationType {
   bodyExp: number;
   /** Current body cultivation level */
   bodyLevel: number;
+  /** Tribulation Points - resource for body breakthrough, gained from defeating monsters (one-time per monster) */
+  tribulationPoints: number;
+  /** List of monster IDs that have been defeated (for one-time TP reward) */
+  defeatedMonsters: string[];
 }
 
 /**
@@ -136,6 +140,7 @@ export interface Monster {
   attack: number;
   expReward: number;
   difficulty: number; // 1-100 scale
+  tpReward: number; // Tribulation Points reward (one-time per monster)
   drops: MonsterDrops;
 }
 
