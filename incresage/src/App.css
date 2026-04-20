@@ -222,12 +222,58 @@
 }
 
 .game-panel {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 24px;
+  width: 100%;
 }
 
 .game-panel > div {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(111, 66, 193, 0.12);
+  border-radius: 28px;
+  padding: 28px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  box-shadow: 0 18px 40px rgba(88, 48, 164, 0.08);
+}
+
+/* Cultivation Section: Flex row for side-by-side */
+.cultivation-section {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 24px;
+  width: 100%;
+}
+
+.cultivation-section .qi-cultivation-panel,
+.cultivation-section .body-cultivation-panel {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(111, 66, 193, 0.12);
+  border-radius: 28px;
+  padding: 28px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  box-shadow: 0 18px 40px rgba(88, 48, 164, 0.08);
+}
+
+/* Other Panels: Grid for stacking */
+.other-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.other-panels > div {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(111, 66, 193, 0.12);
   border-radius: 28px;
@@ -443,6 +489,17 @@
   line-height: 1.6;
 }
 
+.battle-status {
+  width: 100%;
+  text-align: center;
+  padding: 12px 16px;
+  background: rgba(111, 66, 193, 0.1);
+  border-radius: 8px;
+  font-weight: 500;
+  color: #6f42c1;
+  font-size: 0.95rem;
+}
+
 /* New UI sections */
 .monster-encounter,
 .alchemy-panel {
@@ -584,6 +641,19 @@ button:disabled {
 
   .app {
     padding: 24px 18px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cultivation-section {
+    flex-direction: column; /* Stack vertically */
+    gap: 16px;
+  }
+  .other-panels {
+    grid-template-columns: 1fr; /* Single column */
+  }
+  .status-panel .status {
+    grid-template-columns: 1fr; /* Stack stats vertically if needed */
   }
 }
 

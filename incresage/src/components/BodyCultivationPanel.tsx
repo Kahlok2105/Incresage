@@ -64,7 +64,6 @@ export const BodyCultivationPanel: React.FC<{
   return (
     <div className="body-cultivation-panel" style={{ 
       padding: '20px', 
-      margin: '20px 0', 
       border: '2px solid #8B4513', 
       borderRadius: '10px',
       background: 'linear-gradient(135deg, #2a1810 0%, #1a0f0a 100%)',

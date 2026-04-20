@@ -101,15 +101,15 @@ export const calculateBodyExpRequired = (level: number): number => {
 /**
  * Calculate tenacity required for body breakthrough at current level
  */
-export const calculateTenacityRequired = (level: number): number => {
-  return 50 * Math.pow(1.8, level);
+export const calculateTenacityRequired = (bodyStageIndex: number): number => {
+  return 50 * Math.pow(1.8, bodyStageIndex);
 };
 
 /**
  * Calculate tribulation points required for body breakthrough at current level
  */
-export const calculateTPRequired = (level: number): number => {
-  return 5 * Math.pow(level, 1.2);
+export const calculateTPRequired = (bodyStageIndex: number): number => {
+  return 5 * Math.pow(bodyStageIndex, 1.2);
 };
 
 /**

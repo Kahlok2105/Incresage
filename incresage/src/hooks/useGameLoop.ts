@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PlayerState, Monster } from "../types/game";
 import { MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
 import { QI_REALMS, BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
-import { calculateLifespan, calculateBodyExpRequired, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
+import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
 
 /**
  * Core game‑loop hook.
@@ -690,7 +690,6 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     
     if (!nextBodyRealm) return { success: false, chance: 0 };
 
-    const requiredBodyLevel = bodyStageIndex + 1;
     const tenacityRequired = calculateTenacityRequired(state.bodyLevel);
     const tpRequired = calculateTPRequired(state.bodyLevel);
     

@@ -131,14 +131,25 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
     });
   };
 
+  // Monster auto attack when it's monster turn
   useEffect(() => {
-  if (!combatState.isPlayerTurn && combatState.isActive) {
-    const timer = setTimeout(() => {
-      monsterAttack();
-    }, 500);
-    return () => clearTimeout(timer);
-  }
-}, [combatState.isPlayerTurn, combatState.isActive]);
+    if (!combatState.isPlayerTurn && combatState.isActive) {
+      const timer = setTimeout(() => {
+        monsterAttack();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [combatState.isPlayerTurn, combatState.isActive]);
+
+  // Player auto attack when it's player turn (automatic battle loop)
+  useEffect(() => {
+    if (combatState.isPlayerTurn && combatState.isActive) {
+      const timer = setTimeout(() => {
+        playerAttackAction();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [combatState.isPlayerTurn, combatState.isActive]);
 
   // Flee from combat
   const fleeCombat = () => {
@@ -248,15 +259,11 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       </div>
 
       {/* Combat Controls */}
-      {combatState.isActive && combatState.isPlayerTurn && (
+      {combatState.isActive && (
         <div className="combat-controls">
-          <button 
-          onClick={playerAttackAction} 
-          className="attack-btn"
-          disabled={!combatState.isPlayerTurn || !combatState.isActive}
-        >
-          {combatState.isPlayerTurn ? "⚔️ Attack" : "⏳ Monster is attacking..."}
-          </button>
+          <div className="battle-status">
+            {combatState.isPlayerTurn ? "⏳ Preparing attack..." : "⚔️ Monster is attacking..."}
+          </div>
           <button onClick={fleeCombat} className="flee-btn">
             🏃 Flee
           </button>
