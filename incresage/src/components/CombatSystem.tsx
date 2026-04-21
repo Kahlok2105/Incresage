@@ -24,7 +24,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
   const [combatState, setCombatState] = useState<CombatState>({
     isActive: false,
     monster: null,
-    playerHP: playerVitality,
+    playerHP: Math.floor(playerVitality),
     monsterHP: 0,
     log: [],
     isPlayerTurn: true
@@ -38,7 +38,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       setCombatState({
         isActive: true,
         monster,
-        playerHP: playerVitality, // Initialize from prop
+        playerHP: Math.floor(playerVitality), // Initialize from prop
         monsterHP: monster.hp,    // Initialize from monster data
         log: [`A wild Tier ${monster.difficulty} ${monster.name} appears!`],
         isPlayerTurn: true
@@ -166,14 +166,14 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
   // Go back to monster list
   const goBackToList = () => {
     setSelectedMonster(null);
-    setCombatState({
-      isActive: false,
-      monster: null,
-      playerHP: playerVitality,
-      monsterHP: 0,
-      log: [],
-      isPlayerTurn: true
-    });
+      setCombatState({
+        isActive: false,
+        monster: null,
+        playerHP: Math.floor(playerVitality),
+        monsterHP: 0,
+        log: [],
+        isPlayerTurn: true
+      });
   };
 
   // Calculate HP percentages for bars
@@ -239,7 +239,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
               className="hp-fill" 
               style={{ width: `${getMonsterHPPercent()}%` }}
             />
-            <span>{combatState.monsterHP} / {combatState.monster.hp} HP</span>
+            <span>{Math.floor(combatState.monsterHP)} / {Math.floor(combatState.monster.hp)} HP</span>
           </div>
           <p className="monster-stats">ATK: {combatState.monster.attack}</p>
         </div>
@@ -253,7 +253,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
             className="hp-fill" 
             style={{ width: `${getPlayerHPPercent()}%` }}
           />
-          <span>{combatState.playerHP} / {playerVitalityCap} HP</span>
+          <span>{Math.floor(combatState.playerHP)} / {Math.floor(playerVitalityCap)} HP</span>
         </div>
         <p className="player-stats">ATK: {playerAttack} | DEF: {playerDefense}</p>
       </div>

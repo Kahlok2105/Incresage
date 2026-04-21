@@ -31,8 +31,8 @@ export const BodyCultivationPanel: React.FC<{
   const nextBodyRealm = BODY_REALMS[bodyStageIndex + 1];
   
   const requiredBodyLevel = bodyStageIndex + 1;
-  const tenacityRequired = calculateTenacityRequired(bodyLevel);
-  const tpRequired = calculateTPRequired(bodyLevel);
+  const tenacityRequired = calculateTenacityRequired(bodyStageIndex);
+  const tpRequired = calculateTPRequired(bodyStageIndex);
   
   const currentChance = nextBodyRealm
     ? (calculateBodyBreakthroughChance() * 100).toFixed(1)

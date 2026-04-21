@@ -673,8 +673,8 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     if (!nextBodyRealm) return 0;
 
     const requiredBodyLevel = bodyStageIndex + 1;
-    const tenacityRequired = calculateTenacityRequired(state.bodyLevel);
-    const tpRequired = calculateTPRequired(state.bodyLevel);
+    const tenacityRequired = calculateTenacityRequired(bodyStageIndex);
+    const tpRequired = calculateTPRequired(bodyStageIndex);
     
     const tenacityRatio = state.tenacity / tenacityRequired;
     const tpRatio = state.tribulationPoints / tpRequired;
@@ -690,8 +690,8 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     
     if (!nextBodyRealm) return { success: false, chance: 0 };
 
-    const tenacityRequired = calculateTenacityRequired(state.bodyLevel);
-    const tpRequired = calculateTPRequired(state.bodyLevel);
+    const tenacityRequired = calculateTenacityRequired(bodyStageIndex);
+    const tpRequired = calculateTPRequired(bodyStageIndex);
     
     // Check if requirements are met (at least 50% of each requirement)
     const canAttempt = state.tenacity >= tenacityRequired * 0.5 && 
@@ -703,7 +703,8 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
 
     // Roll the dice
     const roll = Math.random();
-    const success = roll < chance;
+    // Cap internal roll check at 100% for guaranteed success, while keeping displayed chance intact
+    const success = roll < Math.min(chance, 1.0);
 
     setState((prev) => {
       if (success) {
@@ -723,9 +724,8 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
           currentBodyStage: newStage,
           vitalityCap,
           spiritCap,
-          // Consume resources on success
-          tribulationPoints: 0,
-          tenacity: 0
+          // Consume resources on success (TP are preserved as checkpoints)
+          tenacity: Math.max(0, prev.tenacity - tenacityRequired),
         };
       } else {
         // Failure penalty: lose 30% tenacity and 1 body level
