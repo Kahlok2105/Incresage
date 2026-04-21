@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerState, Monster } from "../types/game";
-import { MONSTERS, MEDITATION_TYPES } from "../constants/gameData";
+import { MONSTERS, MEDITATION_TYPES, BATTLE_TECHNIQUES } from "../constants/gameData";
 import { QI_REALMS, BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
 import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
 
@@ -42,6 +42,7 @@ import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } fro
     
     unlockedFeatures: [],
     meditationTypes: [...MEDITATION_TYPES],
+    battleTechniques: [...BATTLE_TECHNIQUES],
     activeMeditationId: null,
     bodyExp: 0,
     bodyLevel: 1,
@@ -90,7 +91,10 @@ export function useGameLoop(tickMs: number = 1_000) {
           ),
 
           lifespan: parsed.lifespan ?? maxLifespan,
-          maxLifespan: parsed.maxLifespan ?? maxLifespan
+          maxLifespan: parsed.maxLifespan ?? maxLifespan,
+          
+          // Ensure battleTechniques exists for migration
+          battleTechniques: parsed.battleTechniques || [...BATTLE_TECHNIQUES]
         };
       })()
     : {
@@ -120,6 +124,7 @@ export function useGameLoop(tickMs: number = 1_000) {
         
         unlockedFeatures: [],
         meditationTypes: [...MEDITATION_TYPES],
+        battleTechniques: [...BATTLE_TECHNIQUES],
         activeMeditationId: null,
         bodyExp: 0,
         bodyLevel: 1,
@@ -236,6 +241,53 @@ export function useGameLoop(tickMs: number = 1_000) {
     });
   };
 
+  // Helper: calculate battle technique stat bonus
+  const calculateBattleBonus = (technique: { baseValue: number; level: number }) => {
+    if (technique.level === 0) return 0;
+    return Math.floor(technique.baseValue * Math.pow(technique.level, 1.5) * 100) / 100;
+  };
+
+  // Helper: calculate spirit stones required for next level
+  const calculateBattleUpgradeCost = (technique: { baseValue: number; level: number }) => {
+    const nextLevel = technique.level + 1;
+    return Math.floor(technique.baseValue * Math.pow(1.15, nextLevel));
+  };
+
+  // Helper: get total battle bonuses
+  const getBattleBonuses = (currentState: PlayerState) => {
+    const bonuses = { attack: 0, defense: 0, vitality: 0, spirit: 0 };
+    if (!currentState.battleTechniques) return bonuses;
+    currentState.battleTechniques.forEach(technique => {
+      const bonus = calculateBattleBonus(technique);
+      bonuses[technique.stat] += bonus;
+    });
+    return bonuses;
+  };
+
+  // Helper: upgrade battle technique
+  const upgradeBattleTechnique = (techniqueId: string) => {
+    setState(prev => {
+      if (!prev.battleTechniques) return prev;
+      
+      const technique = prev.battleTechniques.find(t => t.id === techniqueId);
+      if (!technique) return prev;
+
+      const maxLevel = Math.min(100, prev.bodyLevel * 5);
+      if (technique.level >= maxLevel) return prev;
+
+      const cost = calculateBattleUpgradeCost(technique);
+      if (prev.spiritStones < cost) return prev;
+
+      return {
+        ...prev,
+        spiritStones: prev.spiritStones - cost,
+        battleTechniques: prev.battleTechniques.map(t =>
+          t.id === techniqueId ? { ...t, level: t.level + 1 } : t
+        )
+      };
+    });
+  };
+
   // Helper: calculate passive Qi gain for the current tick.
   const computeQiGain = (currentState: PlayerState) => {
     const qiRealm = getCurrentRealm(QI_REALMS, currentState.currentQiRealmIndex, currentState.currentQiStage);
@@ -252,6 +304,13 @@ export function useGameLoop(tickMs: number = 1_000) {
   const usableQi = state.qi;
   const currentQiRealm = getCurrentRealm(QI_REALMS, state.currentQiRealmIndex, state.currentQiStage);
   const totalQi = currentQiRealm.qiCap;
+
+  // Derived: battle bonuses
+  const battleBonuses = getBattleBonuses(state);
+  const totalAttack = state.attack + battleBonuses.attack;
+  const totalDefense = state.defense + battleBonuses.defense;
+  const totalVitality = state.vitality + battleBonuses.vitality;
+  const totalSpirit = state.spirit + battleBonuses.spirit;
 
   // Tick handler – updates Qi and timestamps.
   const tick = () => {
@@ -785,6 +844,12 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     getCurrentMeditationStats,
     meditationTypes: state.meditationTypes,
     activeMeditationId: state.activeMeditationId,
+    battleTechniques: state.battleTechniques,
+    upgradeBattleTechnique,
+    totalAttack,
+    totalDefense,
+    totalVitality,
+    totalSpirit,
     welcomeData,
     clearWelcomeData: () => setWelcomeData(null)
   };

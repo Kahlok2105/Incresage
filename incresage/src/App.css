@@ -416,6 +416,96 @@
   margin-bottom: 4px;
 }
 
+/* Battle Techniques Panel */
+.battle-techniques-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(111, 66, 193, 0.15);
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.battle-techniques-panel h2 {
+  margin: 0 0 12px 0;
+  font-size: 1.2rem;
+  color: var(--accent);
+}
+
+.battle-techniques-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.battle-technique-item {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(170, 59, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.battle-technique-item h3 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.battle-technique-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+
+.battle-technique-stats span {
+  background: rgba(170, 59, 255, 0.06);
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--accent);
+}
+
+.battle-technique-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.battle-technique-controls button {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.battle-technique-controls button:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.battle-technique-controls button:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+.battle-technique-maxed,
+.battle-technique-capped {
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+  padding: 4px 0;
+}
+
 /* RPG Stat Bars */
 .stat-bar-container {
   width: 100%;

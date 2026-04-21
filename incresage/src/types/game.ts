@@ -50,6 +50,22 @@ export interface MeditationType {
   maxLevel: number;
 }
 
+/**
+ * Battle technique definition.
+ */
+export interface BattleTechnique {
+  /** Unique identifier for the battle technique */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Which stat this technique affects */
+  stat: 'attack' | 'defense' | 'vitality' | 'spirit';
+  /** Base value for stat calculation */
+  baseValue: number;
+  /** Current level (0-100) */
+  level: number;
+}
+
   /**
    * Player's mutable state.
    */
@@ -101,6 +117,8 @@ export interface MeditationType {
     unlockedFeatures: string[]; // e.g., ["combat", "meditation", "bodyCultivation"]
     /** Available meditation types */
     meditationTypes: MeditationType[];
+    /** Available battle techniques */
+    battleTechniques: BattleTechnique[];
   /** Currently active meditation type ID, or null if none */
   activeMeditationId: string | null;
   

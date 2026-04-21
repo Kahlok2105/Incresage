@@ -189,3 +189,37 @@ export const MEDITATION_TYPES = [
     maxLevel: 100
   }
 ];
+
+/**
+ * Starting battle techniques available to players.
+ */
+export const BATTLE_TECHNIQUES = [
+  {
+    id: "iron_skin_mantra",
+    name: "Iron Skin Mantra",
+    stat: "defense" as const,
+    baseValue: 2,
+    level: 0
+  },
+  {
+    id: "tigers_breath",
+    name: "Tiger's Breath",
+    stat: "attack" as const,
+    baseValue: 2,
+    level: 0
+  },
+  {
+    id: "boundless_heart",
+    name: "Boundless Heart",
+    stat: "vitality" as const,
+    baseValue: 5,
+    level: 0
+  },
+  {
+    id: "spirit_refinement",
+    name: "Spirit Refinement",
+    stat: "spirit" as const,
+    baseValue: 5,
+    level: 0
+  }
+];

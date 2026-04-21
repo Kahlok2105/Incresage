@@ -10,6 +10,7 @@ import { PlayerStatsPanel } from "./components/PlayerStatsPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
 import { WelcomeModal } from "./components/WelcomeModal";
+import { BattleTechniquesPanel } from "./components/BattleTechniquesPanel";
 import { useNotifications } from "./hooks/useNotifications";
 import { useEffect, useState } from "react";
 
@@ -31,7 +32,13 @@ export default function App() {
     clearWelcomeData,
     tryBodyBreakthrough,
     calculateBodyBreakthroughChance,
-    getBodyStageIndex
+    getBodyStageIndex,
+    totalAttack,
+    totalDefense,
+    totalVitality,
+    totalSpirit,
+    battleTechniques,
+    upgradeBattleTechnique
   } = useGameLoop();
 
   // Notification system
@@ -56,12 +63,12 @@ export default function App() {
     <div className="app">
         <header className="status-panel">
             <PlayerStatsPanel
-              vitality={state.vitality}
+              vitality={totalVitality}
               vitalityCap={state.vitalityCap}
-              spirit={state.spirit}
+              spirit={totalSpirit}
               spiritCap={state.spiritCap}
-              attack={state.attack}
-              defense={state.defense}
+              attack={totalAttack}
+              defense={totalDefense}
               knowledge={state.knowledge}
               curiosity={state.curiosity}
               tenacity={state.tenacity}
@@ -108,16 +115,22 @@ export default function App() {
           setActiveMeditation={setActiveMeditation}
           getCurrentMeditationStats={getCurrentMeditationStats}
         />
+        <BattleTechniquesPanel
+          battleTechniques={battleTechniques}
+          upgradeBattleTechnique={upgradeBattleTechnique}
+          spiritStones={state.spiritStones}
+          bodyLevel={state.bodyLevel}
+        />
         {/* Other Panels: In a grid below */}
         <div className="other-panels">
           {state.unlockedFeatures.includes("monster") && (
             <CombatSystem
-              playerAttack={state.attack}
-              playerDefense={state.defense}
+              playerAttack={totalAttack}
+              playerDefense={totalDefense}
               addSpiritStones={addSpiritStones}
               addBodyExpNew={addBodyExpNew}
               addTribulationPoints={addTribulationPoints}
-              playerVitality={state.vitality}
+              playerVitality={totalVitality}
               playerVitalityCap={state.vitalityCap}
             />
           )}
