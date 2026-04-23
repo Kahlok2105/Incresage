@@ -23,7 +23,7 @@ This document provides a comprehensive overview of the **Incresage** cultivation
 export interface PlayerState {
   // Resources
   qi: number;                    // Current Qi amount
-  spiritStones: number;          // Currency for breakthroughs
+  spiritStones: number;          // Currency for breakthroughs and battle technique upgrades
   
   // Qi Cultivation Progress
   currentQiRealmIndex: number;   // 0-5 (Mortal to Spirit Severing)
@@ -42,6 +42,8 @@ export interface PlayerState {
   spirit: number;                // Mana/energy points
   vitalityCap: number;           // Maximum vitality
   spiritCap: number;             // Maximum spirit
+  attack: number;                // Base attack power (enhanced by battle techniques)
+  defense: number;               // Base defense (flat damage reduction, enhanced by battle techniques)
   
   // Mental Stats
   curiosity: number;             // Mental exploration stat
@@ -52,9 +54,16 @@ export interface PlayerState {
   lifespan: number;              // Current lifespan in years
   maxLifespan: number;           // Maximum lifespan based on cultivation
   
-  // Features & Meditation
+  // Body Cultivation
+  bodyExp: number;               // Experience points for body cultivation
+  bodyLevel: number;             // Current body cultivation level
+  tribulationPoints: number;     // Resource for body breakthroughs (earned from monsters)
+  defeatedMonsters: string[];    // List of monster IDs defeated (for one-time TP rewards)
+  
+  // Features & Systems
   unlockedFeatures: string[];    // ["monster", "alchemy", "bodyCultivation"]
   meditationTypes: MeditationType[]; // Available meditation techniques
+  battleTechniques: BattleTechnique[]; // Available battle techniques
   activeMeditationId: string | null; // Currently active meditation
 }
 ```
@@ -72,6 +81,17 @@ export interface MeditationType {
   currentExp: number;       // Current experience points
   expToNextLevel: number;   // Experience required for next level
   maxLevel: number;         // Maximum level (100)
+}
+```
+
+### Battle Technique (`src/types/game.ts`)
+```typescript
+export interface BattleTechnique {
+  id: string;               // Unique identifier
+  name: string;             // Display name
+  stat: 'attack' | 'defense' | 'vitality' | 'spirit'; // Which stat this technique affects
+  baseValue: number;        // Base value for stat calculation
+  level: number;            // Current level (0-100)
 }
 ```
 
@@ -108,6 +128,7 @@ export interface Monster {
   attack: number;                   // Monster attack power
   expReward: number;                // Body cultivation EXP on victory
   difficulty: number;               // 1-100 scale
+  tpReward: number;                 // Tribulation Points reward (one-time per monster)
   drops: MonsterDrops;              // Drop table
 }
 ```
@@ -160,7 +181,37 @@ Players progress through two independent cultivation paths:
 
 **Total Progression:** 6 realms × 3 stages = 18 steps per cultivation path
 
-### 3.3 Breakthrough System
+### 3.3 Body Cultivation Mechanics
+
+**Body EXP and Leveling:**
+- Body EXP gained from defeating monsters: `floor(difficulty^1.5) × 10`
+- EXP required for next level: `100 × floor(level^1.8)`
+- Body Level increases combat effectiveness and unlocks higher battle technique levels
+
+**Tribulation Points (TP):**
+- Earned by defeating monsters (one-time per monster type)
+- TP reward: `floor(difficulty^1.5)`
+- Used exclusively for body breakthroughs
+
+**Body Breakthrough Requirements:**
+- **Tenacity:** Required amount = `50 × 1.8^bodyStageIndex`
+- **Tribulation Points:** Required amount = `5 × bodyStageIndex^1.2`
+- **Body Level:** Must be at least the current stage index + 1
+- Must have 50% of required resources to attempt
+
+**Body Breakthrough Success Calculation:**
+```typescript
+const tenacityRatio = Math.min(1, currentTenacity / tenacityRequired);
+const tpRatio = Math.min(1, tribulationPoints / tpRequired);
+const levelRatio = Math.min(1.5, bodyLevel / requiredBodyLevel);
+const chance = baseSuccessRate × tenacityRatio × tpRatio × levelRatio;
+```
+
+**Body Breakthrough Outcomes:**
+- **Success:** Advance to next realm/stage, update stat caps
+- **Failure:** Lose 30% of current tenacity and 1 body level
+
+### 3.4 Breakthrough System
 
 **Attempt Requirements:**
 - Player must have Qi ≥ 50% of next realm's requirement
@@ -213,7 +264,33 @@ where Multiplier = 1 + floor(Level / 10)
 - `isMeditating` boolean provides additional 2× Qi multiplier
 - Separate from meditation technique system for backwards compatibility
 
-### 3.5 Stat System
+### 3.5 Battle Techniques System
+
+**Available Techniques:**
+
+| Technique | Stat | Base Value | Description |
+|-----------|------|------------|-------------|
+| Iron Skin Mantra | Defense | 2 | Increases damage reduction |
+| Tiger's Breath | Attack | 2 | Increases damage dealt |
+| Boundless Heart | Vitality | 5 | Increases maximum health |
+| Spirit Refinement | Spirit | 5 | Increases maximum mana |
+
+**Leveling System:**
+- Levels range from 0-100
+- Maximum level capped at `bodyLevel × 5`
+- Upgrade cost: `baseValue × 1.15^level` spirit stones
+- Stat bonus: `baseValue × level^1.5`
+
+**Stat Calculation:**
+```
+Final Stat = Base Stat + Σ(Battle Technique Bonuses)
+```
+
+**Examples:**
+- Iron Skin Mantra Level 5: +`2 × 5^1.5` = +15.81 defense
+- Tiger's Breath Level 10: +`2 × 10^1.5` = +63.24 attack
+
+### 3.6 Stat System
 
 **Mental Stats:**
 - **Curiosity:** Gained from "Explore Surroundings" meditation
@@ -240,7 +317,7 @@ spiritCap = (100 × (qiRealm+1) × (bodyRealm+1)) + sqrt(knowledge)
 - Capped at `maxLifespan` based on highest realm achieved
 - Formula: `100 × 2.15^realmNumber` where realmNumber = floor((totalIndex + 2) / 3)
 
-### 3.6 Combat System
+### 3.7 Combat System
 
 **Monster Encounters:**
 - Unlocked at: Qi Realm 1 (Qi Condensation)
@@ -249,28 +326,30 @@ spiritCap = (100 × (qiRealm+1) × (bodyRealm+1)) + sqrt(knowledge)
 - Player progresses through monsters at their own pace
 
 **Player Combat Stats:**
-- **Attack:** Base 5 (placeholder for future stat source)
-- **Defense:** Base 5 (placeholder for future stat source) - reduces incoming damage by flat amount
+- **Attack:** Base 5 + battle technique bonuses
+- **Defense:** Base 5 + battle technique bonuses (flat damage reduction)
+- **Vitality:** Enhanced by battle techniques for maximum health
+- **Spirit:** Enhanced by battle techniques for maximum mana
 
 **Monster Stats:**
-| Monster | Difficulty | HP | Attack | EXP | Spirit Stones | Monster Cores |
-|---------|------------|-----|--------|-----|---------------|---------------|
-| Spirit Wisp | 1 | 50 | 5 | 10 | 5 | 1x Tier 1 |
-| Forest Wolf | 2 | 100 | 10 | 20 | 10 | 1x Tier 1 |
-| Earth Golem | 3 | 200 | 15 | 35 | 15 | 1x Tier 1 |
-| Fire Imp | 4 | 150 | 25 | 50 | 20 | 1x Tier 1 |
-| Shadow Stalker | 5 | 300 | 30 | 75 | 30 | 1x Tier 1 |
-| Rock Elemental | 6 | 500 | 35 | 100 | 40 | 1x Tier 1 |
-| Wind Spirit | 7 | 400 | 50 | 150 | 50 | 1x Tier 1 |
-| Ice Golem | 8 | 800 | 60 | 200 | 75 | 1x Tier 1 |
-| Thunder Beast | 9 | 700 | 80 | 300 | 100 | 1x Tier 1 |
-| Ancient Guardian | 10 | 1200 | 100 | 500 | 150 | 2x Tier 1 |
+| Monster | Difficulty | HP | Attack | EXP | TP | Spirit Stones | Monster Cores |
+|---------|------------|-----|--------|-----|----|---------------|---------------|
+| Spirit Wisp | 1 | 50 | 5 | 10 | 1 | 5 | 1x Tier 1 |
+| Forest Wolf | 2 | 100 | 10 | 20 | 2 | 10 | 1x Tier 1 |
+| Earth Golem | 3 | 200 | 15 | 35 | 3 | 15 | 1x Tier 1 |
+| Fire Imp | 4 | 150 | 25 | 50 | 4 | 20 | 1x Tier 1 |
+| Shadow Stalker | 5 | 300 | 30 | 75 | 5 | 30 | 1x Tier 1 |
+| Rock Elemental | 6 | 500 | 35 | 100 | 6 | 40 | 1x Tier 1 |
+| Wind Spirit | 7 | 400 | 50 | 150 | 7 | 50 | 1x Tier 1 |
+| Ice Golem | 8 | 800 | 60 | 200 | 8 | 75 | 1x Tier 1 |
+| Thunder Beast | 9 | 700 | 80 | 300 | 9 | 100 | 1x Tier 1 |
+| Ancient Guardian | 10 | 1200 | 100 | 500 | 10 | 150 | 2x Tier 1 |
 
 **Combat Mechanics:**
 - Player damage: `playerAttack × (0.8 to 1.2 variance)`
 - Monster damage: `max(1, monsterAttack - playerDefense) × (0.8 to 1.2 variance)`
 - Turn-based: Player attacks first, then monster counterattacks
-- Victory: Gain spirit stones, body EXP, and monster cores
+- Victory: Gain spirit stones, body EXP, and tribulation points (one-time per monster type)
 - Defeat: Monster escapes, player can try again
 
 **Monster Core System:**
@@ -328,7 +407,10 @@ Where realmNumber accounts for both realm index and stage progression.
 | **Status** | Displays realm, Qi, spirit stones, stats, breakthrough button |
 | **MeditationPanel** | Shows available meditation techniques, activation, leveling, stats |
 | **MeditationControls** | Legacy meditation toggle (backwards compatibility) |
+| **BattleTechniquesPanel** | Shows available battle techniques, leveling, upgrade costs, stat bonuses |
 | **CombatSystem** | Full combat UI with HP bars, attack/flee buttons, combat log (unlocked at Qi Realm 1) |
+| **BodyCultivationPanel** | Body cultivation progress, breakthrough requirements and attempts |
+| **QiCultivationPanel** | Qi cultivation progress, breakthrough requirements and attempts |
 | **AlchemyPanel** | Placeholder for alchemy system (unlocked at Qi Realm 2) |
 | **UnlockToast** | Brief notification when new features are unlocked |
 | **WelcomeModal** | Shows offline progress summary when returning |
@@ -359,14 +441,17 @@ The root component wires together:
 |------|---------|
 | `src/types/game.ts` | TypeScript interfaces for all game data |
 | `src/constants/cultivationRealms.ts` | Qi and Body realm definitions (18 stages each) |
-| `src/constants/gameData.ts` | Monster pool and meditation type definitions |
+| `src/constants/gameData.ts` | Monster pool, meditation types, and battle techniques |
 | `src/utils/gameMath.ts` | Mathematical utilities for scaling and formatting |
 | `src/hooks/useGameLoop.ts` | Core game loop, state management, persistence |
 | `src/hooks/useNotifications.ts` | Notification system hook |
 | `src/components/Status.tsx` | Player status display and breakthrough UI |
 | `src/components/MeditationPanel.tsx` | Meditation system UI with techniques and leveling |
 | `src/components/MeditationControls.tsx` | Legacy meditation toggle |
+| `src/components/BattleTechniquesPanel.tsx` | Battle techniques UI with leveling and upgrades |
 | `src/components/CombatSystem.tsx` | Full combat UI with HP bars, turn-based combat, combat log |
+| `src/components/BodyCultivationPanel.tsx` | Body cultivation progress and breakthrough UI |
+| `src/components/QiCultivationPanel.tsx` | Qi cultivation progress and breakthrough UI |
 | `src/components/AlchemyPanel.tsx` | Placeholder for future alchemy system |
 | `src/components/UnlockToast.tsx` | Feature unlock notification |
 | `src/components/WelcomeModal.tsx` | Offline progress summary modal |
@@ -379,19 +464,21 @@ The root component wires together:
 ## 8. Current Implementation Status
 
 ### ✅ Fully Implemented
-- Dual cultivation system (Qi path active, Body path framework ready)
-- 18-stage realm progression with exponential scaling
-- Probabilistic breakthrough system with failure penalties
+- Dual cultivation system (Qi and Body paths fully active)
+- 18-stage realm progression with exponential scaling for both paths
+- Probabilistic breakthrough system with different penalties per path
 - Meditation system with 3 techniques, experience, and leveling
-- Complete stat system (Curiosity, Tenacity, Knowledge, Vitality, Spirit)
+- Battle techniques system with 4 techniques, spirit stone upgrades, and stat bonuses
+- Complete stat system (Curiosity, Tenacity, Knowledge, Vitality, Spirit, Attack, Defense)
 - Lifespan system with activity-based growth
+- Combat system with turn-based battles and tribulation points
+- Body cultivation with EXP, levels, and tribulation point requirements
 - Offline progress calculation with WelcomeModal
 - Notification system for user feedback
 - Feature unlocking based on realm progression
 - Persistent save/load with localStorage
 
 ### 🔄 Partially Implemented
-- Body Cultivation (framework exists, UI not yet built)
 - Alchemy system (placeholder component, mechanics TBD)
 
 ### 📋 Future Considerations
@@ -400,23 +487,24 @@ The root component wires together:
 - Additional meditation techniques
 - More monster varieties
 - Alchemy recipes and effects
-- Body cultivation UI and mechanics
 - Achievement system
-- Leaderboards/social features
+- Leaderboards/social featuress
 
 ---
 
 ## 9. Summary
 
 Incresage is a sophisticated cultivation idle game with:
-- **Dual progression paths** (Qi and Body cultivation)
-- **18 total stages** across 6 realms per path
+- **Dual progression paths** (Qi and Body cultivation, both fully implemented)
+- **18 total stages** across 6 realms per path with independent advancement
 - **Deep meditation system** with 3 techniques, experience, and leveling
-- **Probabilistic breakthroughs** with meaningful risk/reward
-- **Comprehensive stat system** with 6+ interconnected stats
+- **Battle techniques system** with 4 upgradeable techniques providing combat bonuses
+- **Probabilistic breakthroughs** with path-specific risk/reward mechanics
+- **Comprehensive stat system** with 8+ interconnected stats
+- **Full combat system** with turn-based battles, tribulation points, and body EXP
 - **Offline progress** with detailed return summaries
 - **Feature gating** that unlocks content as players advance
 - **Clean mathematical scaling** using exponential formulas
 - **Full persistence** with automatic save/load
 
-The architecture is designed for extensibility, allowing easy addition of new realms, monsters, meditation techniques, and game systems.
+The architecture is designed for extensibility, allowing easy addition of new realms, monsters, meditation techniques, battle techniques, and game systems.
