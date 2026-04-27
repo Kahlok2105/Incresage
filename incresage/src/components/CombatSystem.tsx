@@ -7,19 +7,18 @@ interface CombatSystemProps {
   playerDefense: number;
   playerVitality: number;
   playerVitalityCap: number;
-  addSpiritStones: (amount: number) => void;
-  addBodyExpNew: (amount: number) => void;
-  addTribulationPoints: (monster: Monster) => void;
+  onVictory: (monster: Monster) => void;
 }
+
+
+
 
 export const CombatSystem: React.FC<CombatSystemProps> = ({
   playerAttack,
   playerDefense,
   playerVitality,
   playerVitalityCap,
-  addSpiritStones,
-  addBodyExpNew,
-  addTribulationPoints
+  onVictory
 }) => {
   const [combatState, setCombatState] = useState<CombatState>({
     isActive: false,
@@ -58,26 +57,19 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       const newLog = [...prev.log, `You deal ${damage} damage to ${prev.monster?.name}!`];
 
       if (newMonsterHP <= 0) {
-        // Victory Logic
         const monster = prev.monster!;
-        const tpGained = monster.tpReward || 0;
 
-        // 1. Call parent reward functions
         setTimeout(() => {
+          onVictory(monster);
+        }, 0);
 
-        addSpiritStones(monster.drops.spiritStones);
-        addBodyExpNew(monster.expReward);
-        addTribulationPoints(monster);
-        }, 0); // Delay to allow log to update before rewards are added
-
-        // 2. Construct the reward messages
-        const tpMessage = tpGained > 0 
-          ? ` and ${tpGained} Tribulation Points!` 
+        const tpMessage = monster.tpReward > 0
+          ? ` and ${monster.tpReward} Tribulation Points!`
           : " (TP already collected)";
 
-        const coreMessage = monster.drops.monsterCores.length > 0
-          ? `Received ${monster.drops.monsterCores.map(c => `${c.amount}x Tier ${c.tier} Core`).join(", ")}`
-          : "No cores found";
+        const lootMessage = monster.drops.items?.length
+          ? "Loot has been added to your inventory."
+          : "No item drops were found.";
 
         return {
           ...prev,
@@ -87,7 +79,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
             ...newLog,
             `Defeated ${monster.name}!`,
             `Received ${monster.drops.spiritStones} spirit stones and ${monster.expReward} body EXP!`,
-            `${coreMessage}${tpMessage}`
+            `${lootMessage}${tpMessage}`
           ],
         };
       }

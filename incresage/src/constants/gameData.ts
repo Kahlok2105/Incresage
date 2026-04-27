@@ -1,4 +1,4 @@
-import type { Monster, MonsterCore } from "../types/game";
+import type { Monster } from "../types/game";
 import { calculateMonsterExp, calculateMonsterTP } from "../utils/gameMath";
 
 /**
@@ -6,7 +6,6 @@ import { calculateMonsterExp, calculateMonsterTP } from "../utils/gameMath";
  * Each monster has HP, Attack, EXP reward, difficulty level, and drop table
  */
 export const MONSTERS: Monster[] = [
-  // Difficulty 1 - Starter mob
   {
     id: "spirit_wisp",
     name: "Spirit Wisp",
@@ -17,10 +16,9 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(1),
     drops: {
       spiritStones: 5,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [{ itemId: 'tier_1_core', chance: 1, min: 1, max: 1 }]
     }
   },
-  // Difficulty 2
   {
     id: "forest_wolf",
     name: "Forest Wolf",
@@ -31,10 +29,9 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(2),
     drops: {
       spiritStones: 10,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [{ itemId: 'tier_1_core', chance: 1, min: 1, max: 2 }]
     }
   },
-  // Difficulty 3
   {
     id: "earth_golem",
     name: "Earth Golem",
@@ -45,10 +42,9 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(3),
     drops: {
       spiritStones: 15,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [{ itemId: 'tier_1_core', chance: 1, min: 1, max: 2 }]
     }
   },
-  // Difficulty 4
   {
     id: "fire_imp",
     name: "Fire Imp",
@@ -59,10 +55,12 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(4),
     drops: {
       spiritStones: 20,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [
+        { itemId: 'tier_1_core', chance: 1, min: 1, max: 2 },
+        { itemId: 'foundation_pill', chance: 0.12, min: 1, max: 1 }
+      ]
     }
   },
-  // Difficulty 5
   {
     id: "shadow_stalker",
     name: "Shadow Stalker",
@@ -73,10 +71,12 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(5),
     drops: {
       spiritStones: 30,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [
+        { itemId: 'tier_2_core', chance: 1, min: 1, max: 2 },
+        { itemId: 'foundation_pill', chance: 0.2, min: 1, max: 1 }
+      ]
     }
   },
-  // Difficulty 6
   {
     id: "rock_elemental",
     name: "Rock Elemental",
@@ -87,10 +87,12 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(6),
     drops: {
       spiritStones: 40,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [
+        { itemId: 'tier_2_core', chance: 1, min: 1, max: 2 },
+        { itemId: 'iron_sword', chance: 0.08, min: 1, max: 1 }
+      ]
     }
   },
-  // Difficulty 7
   {
     id: "wind_spirit",
     name: "Wind Spirit",
@@ -101,10 +103,12 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(7),
     drops: {
       spiritStones: 50,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [
+        { itemId: 'tier_2_core', chance: 1, min: 1, max: 3 },
+        { itemId: 'bronze_ring', chance: 0.04, min: 1, max: 1 }
+      ]
     }
   },
-  // Difficulty 8
   {
     id: "ice_golem",
     name: "Ice Golem",
@@ -115,10 +119,12 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(8),
     drops: {
       spiritStones: 75,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [
+        { itemId: 'tier_3_core', chance: 1, min: 1, max: 2 },
+        { itemId: 'foundation_pill', chance: 0.25, min: 1, max: 1 }
+      ]
     }
   },
-  // Difficulty 9
   {
     id: "thunder_beast",
     name: "Thunder Beast",
@@ -129,10 +135,12 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(9),
     drops: {
       spiritStones: 100,
-      monsterCores: [{ tier: 1, amount: 1 }] as MonsterCore[]
+      items: [
+        { itemId: 'tier_3_core', chance: 1, min: 1, max: 2 },
+        { itemId: 'jade_pendant', chance: 0.05, min: 1, max: 1 }
+      ]
     }
   },
-  // Difficulty 10 - Elite mob
   {
     id: "ancient_guardian",
     name: "Ancient Guardian",
@@ -143,7 +151,10 @@ export const MONSTERS: Monster[] = [
     tpReward: calculateMonsterTP(10),
     drops: {
       spiritStones: 150,
-      monsterCores: [{ tier: 1, amount: 2 }] as MonsterCore[]
+      items: [
+        { itemId: 'tier_3_core', chance: 1, min: 2, max: 3 },
+        { itemId: 'jade_pendant', chance: 0.12, min: 1, max: 1 }
+      ]
     }
   }
 ];

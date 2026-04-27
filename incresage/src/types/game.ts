@@ -4,21 +4,13 @@
  * Represents a cultivation realm.
  */
 export interface CultivationRealm {
-  /** Unique identifier for the realm */
   id: string;
-  /** Human readable name */
   name: string;
-  /** Stage within realm: 0 = Early, 1 = Middle, 2 = Late */
   stage: number;
-  /** Display name including stage */
   displayName: string;
-  /** Qi required to reach this realm */
   qiRequired: number;
-  /** Maximum Qi capacity for this realm */
   qiCap: number;
-  /** Multiplier applied to passive gain while in this realm */
   gainMultiplier: number;
-  /** Base success rate for breakthroughs to this realm (0 to 1) */
   baseSuccessRate: number;
 }
 
@@ -28,25 +20,15 @@ export type CultivationType = 'qi' | 'body';
  * Meditation type definition.
  */
 export interface MeditationType {
-  /** Unique identifier for the meditation type */
   id: string;
-  /** Display name */
   name: string;
-  /** Base curiosity gain per second */
   baseCuriosity: number;
-  /** Base tenacity gain per second */
   baseTenacity: number;
-  /** Base qi gain per second */
   baseQi: number;
-  /** Base knowledge gain per second */
   baseKnowledge: number;
-  /** Current level (1-100) */
   level: number;
-  /** Current experience points */
   currentExp: number;
-  /** Experience required for next level */
   expToNextLevel: number;
-  /** Maximum level */
   maxLevel: number;
 }
 
@@ -54,117 +36,98 @@ export interface MeditationType {
  * Battle technique definition.
  */
 export interface BattleTechnique {
-  /** Unique identifier for the battle technique */
   id: string;
-  /** Display name */
   name: string;
-  /** Which stat this technique affects */
   stat: 'attack' | 'defense' | 'vitality' | 'spirit';
-  /** Base value for stat calculation */
   baseValue: number;
-  /** Current level (0-100) */
   level: number;
 }
 
-  /**
-   * Player's mutable state.
-   */
-  export interface PlayerState {
-    /** Current Qi amount */
-    qi: number;
-    /** Accumulated spirit stones */
-    spiritStones: number;
-    
-    /** Qi Cultivation progress */
-    currentQiRealmIndex: number;
-    currentQiStage: number;
-    
-    /** Body Cultivation progress */
-    currentBodyRealmIndex: number;
-    currentBodyStage: number;
-    
-    /** Timestamp of the last game‑loop tick (ms since epoch) */
-    lastUpdate: number;
-    /** Timestamp when the user was last active (for away time tracking) */
-    lastActive: number;
-    
-    /** Health points for combat */
-    vitality: number;
-    /** Mana/energy points for combat abilities */
-    spirit: number;
-    /** Maximum vitality capacity */
-    vitalityCap: number;
-    
-    /** Maximum spirit capacity */
-    spiritCap: number;
-    /** Attack power (placeholder for future stat source) */
-    attack: number;
-    /** Defense - flat damage reduction (placeholder for future stat source) */
-    defense: number;
-    
-    /**Mental Ability */
-    knowledge: number;
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type ItemType = 'material' | 'pill' | 'currency' | 'equipment';
+export type ItemSlot = 'weapon' | 'armor' | 'accessory';
 
-    curiosity: number;
-    /** Mental fortitude for meditation */
-    tenacity: number;
-    
-    /** Current lifespan in years */
-    lifespan: number;
-    /** Maximum lifespan based on cultivation */
-    maxLifespan: number;
-    
-    unlockedFeatures: string[]; // e.g., ["combat", "meditation", "bodyCultivation"]
-    /** Available meditation types */
-    meditationTypes: MeditationType[];
-    /** Available battle techniques */
-    battleTechniques: BattleTechnique[];
-  /** Currently active meditation type ID, or null if none */
-  activeMeditationId: string | null;
-  
-  /** Body cultivation experience (for future body cultivation system) */
-  bodyExp: number;
-  /** Current body cultivation level */
-  bodyLevel: number;
-  /** Tribulation Points - resource for body breakthrough, gained from defeating monsters (one-time per monster) */
-  tribulationPoints: number;
-  /** List of monster IDs that have been defeated (for one-time TP reward) */
-  defeatedMonsters: string[];
+export interface ItemStats {
+  vitality?: number;
+  spirit?: number;
+  attack?: number;
+  defense?: number;
+  mentalGrowthMultiplier?: {
+    tenacity?: number;
+    curiosity?: number;
+    knowledge?: number;
+    qi?: number;
+  };
 }
 
-/**
- * Monster core tier definition
- */
-export interface MonsterCore {
-  tier: number; // 1-10, corresponds to difficulty tiers
-  amount: number;
+export interface ItemTemplateBase {
+  id: string;
+  type: ItemType;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  icon: string;
+  stackable: boolean;
 }
 
-/**
- * Monster drop table
- */
+export interface ConsumableTemplate extends ItemTemplateBase {
+  type: 'material' | 'pill' | 'currency';
+  effectId?: string;
+}
+
+export interface EquipmentTemplate extends ItemTemplateBase {
+  type: 'equipment';
+  slot: ItemSlot;
+  level: number;
+  stats: ItemStats;
+}
+
+export type ItemTemplate = ConsumableTemplate | EquipmentTemplate;
+
+export interface InventoryItemBase extends ItemTemplateBase {
+  instanceId: string;
+  quantity: number;
+}
+
+export interface InventoryConsumableItem extends InventoryItemBase {
+  type: 'material' | 'pill' | 'currency';
+  effectId?: string;
+}
+
+export interface InventoryEquipmentItem extends InventoryItemBase {
+  type: 'equipment';
+  slot: ItemSlot;
+  level: number;
+  stats: ItemStats;
+  isEquipped: boolean;
+}
+
+export type InventoryItem = InventoryConsumableItem | InventoryEquipmentItem;
+
+export interface ItemDropEntry {
+  itemId: string;
+  chance: number; // 0-1 probability
+  min?: number;
+  max?: number;
+  quantity?: number;
+}
+
 export interface MonsterDrops {
   spiritStones: number;
-  monsterCores: MonsterCore[];
+  items?: ItemDropEntry[];
 }
 
-/**
- * Monster definition for combat encounters
- */
 export interface Monster {
   id: string;
   name: string;
   hp: number;
   attack: number;
   expReward: number;
-  difficulty: number; // 1-100 scale
-  tpReward: number; // Tribulation Points reward (one-time per monster)
+  difficulty: number;
+  tpReward: number;
   drops: MonsterDrops;
 }
 
-/**
- * Combat state during a monster encounter
- */
 export interface CombatState {
   isActive: boolean;
   monster: Monster | null;
@@ -174,3 +137,33 @@ export interface CombatState {
   isPlayerTurn: boolean;
 }
 
+export interface PlayerState {
+  qi: number;
+  spiritStones: number;
+  currentQiRealmIndex: number;
+  currentQiStage: number;
+  currentBodyRealmIndex: number;
+  currentBodyStage: number;
+  lastUpdate: number;
+  lastActive: number;
+  vitality: number;
+  spirit: number;
+  vitalityCap: number;
+  spiritCap: number;
+  attack: number;
+  defense: number;
+  knowledge: number;
+  curiosity: number;
+  tenacity: number;
+  lifespan: number;
+  maxLifespan: number;
+  unlockedFeatures: string[];
+  meditationTypes: MeditationType[];
+  battleTechniques: BattleTechnique[];
+  activeMeditationId: string | null;
+  bodyExp: number;
+  bodyLevel: number;
+  tribulationPoints: number;
+  defeatedMonsters: string[];
+  inventory: InventoryItem[];
+}

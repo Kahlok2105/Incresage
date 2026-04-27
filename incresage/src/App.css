@@ -229,11 +229,69 @@
   width: 100%;
 }
 
-.game-panel > div {
+.tab-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: 28px;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(111, 66, 193, 0.12);
-  border-radius: 28px;
+  box-shadow: 0 18px 40px rgba(88, 48, 164, 0.08);
+}
+
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 18px 10px;
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid rgba(111, 66, 193, 0.12);
+}
+
+.tab-button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #5a4c7b;
+  padding: 10px 20px;
+  border-radius: 14px 14px 0 0;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.tab-button:hover {
+  background: rgba(111, 66, 193, 0.08);
+}
+
+.tab-button.active {
+  background: #ffffff;
+  color: #5a4c7b;
+  border-color: rgba(111, 66, 193, 0.18);
+  border-bottom-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(88, 48, 164, 0.08);
+  z-index: 1;
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   padding: 28px;
+  min-height: 220px;
+}
+
+.game-panel > div {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  min-height: auto;
+  display: block;
+  gap: 0;
+  box-shadow: none;
   min-height: 180px;
   display: flex;
   flex-direction: column;

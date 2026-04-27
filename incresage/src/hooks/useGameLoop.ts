@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import type { PlayerState, Monster } from "../types/game";
+import type { InventoryItem, PlayerState, Monster } from "../types/game";
 import { MONSTERS, MEDITATION_TYPES, BATTLE_TECHNIQUES } from "../constants/gameData";
+import { resolveItemDrops } from "../constants/items";
 import { QI_REALMS, BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
 import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
 
@@ -47,7 +48,8 @@ import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } fro
     bodyExp: 0,
     bodyLevel: 1,
     tribulationPoints: 0,
-    defeatedMonsters: []
+    defeatedMonsters: [],
+    inventory: []
   };
 
 export function useGameLoop(tickMs: number = 1_000) {
@@ -94,7 +96,8 @@ export function useGameLoop(tickMs: number = 1_000) {
           maxLifespan: parsed.maxLifespan ?? maxLifespan,
           
           // Ensure battleTechniques exists for migration
-          battleTechniques: parsed.battleTechniques || [...BATTLE_TECHNIQUES]
+          battleTechniques: parsed.battleTechniques || [...BATTLE_TECHNIQUES],
+          inventory: parsed.inventory || []
         };
       })()
     : {
@@ -129,7 +132,8 @@ export function useGameLoop(tickMs: number = 1_000) {
         bodyExp: 0,
         bodyLevel: 1,
         tribulationPoints: 0,
-        defeatedMonsters: []
+        defeatedMonsters: [],
+        inventory: []
       };
 
   const [state, setState] = useState<PlayerState>(initialState);
@@ -510,12 +514,69 @@ export function useGameLoop(tickMs: number = 1_000) {
       const newBodyExp = prev.bodyExp + amount;
       // Calculate body level based on EXP (simple formula: level = floor(sqrt(exp/10)) + 1)
       const newBodyLevel = Math.floor(Math.sqrt(newBodyExp / 10)) + 1;
-      return { 
-        ...prev, 
+      return {
+        ...prev,
         bodyExp: newBodyExp,
         bodyLevel: newBodyLevel
       };
     });
+  };
+
+  const mergeInventoryItems = (inventory: InventoryItem[], newItems: InventoryItem[]) => {
+    return newItems.reduce<InventoryItem[]>((acc, item) => {
+      if (item.stackable) {
+        const existingIndex = acc.findIndex(
+          (inv) => inv.id === item.id && inv.stackable
+        );
+        if (existingIndex >= 0) {
+          const existing = acc[existingIndex];
+          const mergedItem = {
+            ...existing,
+            quantity: existing.quantity + item.quantity
+          };
+          return [
+            ...acc.slice(0, existingIndex),
+            mergedItem,
+            ...acc.slice(existingIndex + 1)
+          ];
+        }
+      }
+
+      return [...acc, item];
+    }, inventory);
+  };
+
+  const addInventoryItems = (items: InventoryItem[]) => {
+    setState((prev) => ({
+      ...prev,
+      inventory: mergeInventoryItems(prev.inventory, items)
+    }));
+  };
+
+  const processMonsterVictory = (monster: Monster) => {
+    const drops = resolveItemDrops(monster.drops.items ?? []);
+
+    setState((prev) => {
+      const alreadyDefeated = prev.defeatedMonsters.includes(monster.id);
+      const tpGained = alreadyDefeated ? 0 : monster.tpReward;
+      const newDefeatedMonsters = alreadyDefeated
+        ? prev.defeatedMonsters
+        : [...prev.defeatedMonsters, monster.id];
+      const newBodyExp = prev.bodyExp + monster.expReward;
+      const newBodyLevel = Math.floor(Math.pow(newBodyExp / 100, 1 / 1.8)) + 1;
+
+      return {
+        ...prev,
+        spiritStones: prev.spiritStones + monster.drops.spiritStones,
+        bodyExp: newBodyExp,
+        bodyLevel: newBodyLevel,
+        tribulationPoints: prev.tribulationPoints + tpGained,
+        defeatedMonsters: newDefeatedMonsters,
+        inventory: mergeInventoryItems(prev.inventory, drops)
+      };
+    });
+
+    return drops;
   };
 
   /** Get a random monster from the pool */
@@ -826,6 +887,9 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     addBodyExp,
     addBodyExpNew,
     addTribulationPoints,
+    addInventoryItems,
+    processMonsterVictory,
+    inventory: state.inventory,
     getRandomMonster,
     tryBreakthrough,
     tryBreakthroughGuaranteed,

@@ -7,6 +7,7 @@ import { AlchemyPanel } from "./components/AlchemyPanel";
 import { BodyCultivationPanel } from "./components/BodyCultivationPanel";
 import { QiCultivationPanel } from "./components/QiCultivationPanel";
 import { PlayerStatsPanel } from "./components/PlayerStatsPanel";
+import { InventoryPanel } from "./components/InventoryPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
 import { WelcomeModal } from "./components/WelcomeModal";
@@ -14,14 +15,14 @@ import { BattleTechniquesPanel } from "./components/BattleTechniquesPanel";
 import { useNotifications } from "./hooks/useNotifications";
 import { useEffect, useState } from "react";
 
+type TabId = "cultivation" | "combat" | "battle" | "alchemy";
+
 /** Root component that wires the game loop and UI controls together. */
 export default function App() {
   const {
     state,
     tryBreakthrough,
-    addSpiritStones,
-    addBodyExpNew,
-    addTribulationPoints,
+    processMonsterVictory,
     usableQi,
     totalQi,
     setActiveMeditation,
@@ -43,6 +44,24 @@ export default function App() {
 
   // Notification system
   const { notifications, showSuccess, showFailure, dismissNotification } = useNotifications();
+
+  const [selectedTab, setSelectedTab] = useState<TabId>("cultivation");
+
+  const tabs = [
+    { id: "cultivation" as TabId, label: "Cultivation", visible: true },
+    { id: "combat" as TabId, label: "Combat", visible: state.unlockedFeatures.includes("monster") },
+    { id: "battle" as TabId, label: "Upgrades", visible: true },
+    { id: "alchemy" as TabId, label: "Alchemy", visible: state.unlockedFeatures.includes("alchemy") }
+  ];
+
+  const visibleTabs = tabs.filter((tab) => tab.visible);
+  const visibleTabIds = visibleTabs.map((tab) => tab.id).join(",");
+
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.id === selectedTab)) {
+      setSelectedTab(visibleTabs[0]?.id ?? "cultivation");
+    }
+  }, [selectedTab, visibleTabIds, visibleTabs]);
 
   // Track the most recently unlocked feature to show a toast notification.
   const [lastFeature, setLastFeature] = useState<string | null>(null);
@@ -78,67 +97,94 @@ export default function App() {
             />
         </header>
         <main className="game-panel">
-        {/* Cultivation Section: Side-by-side */}
-        <div className="cultivation-section">
-          <QiCultivationPanel
-            state={state}
-            tryBreakthrough={() => {
-              const result = tryBreakthrough();
-              if (result.success) {
-                showSuccess("🎉 Breakthrough Successful! Welcome to the next realm!");
-              } else {
-                showFailure("⚠️ Breakthrough Failed! You lost 50% of your Qi.");
-              }
-              return result;
-            }}
-            usableQi={usableQi}
-            totalQi={totalQi}
-          />
-          <BodyCultivationPanel
-            state={state}
-            tryBodyBreakthrough={() => {
-              const result = tryBodyBreakthrough();
-              if (result.success) {
-                showSuccess("🎉 Body Breakthrough Successful! Your physique has advanced!");
-              } else if (result.chance > 0) {
-                showFailure("⚠️ Body Breakthrough Failed! You lost 30% tenacity and 1 body level.");
-              }
-              return result;
-            }}
-            calculateBodyBreakthroughChance={calculateBodyBreakthroughChance}
-            getBodyStageIndex={getBodyStageIndex}
-          />
+          <div className="tab-shell">
+            <div className="tab-bar">
+              {visibleTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`tab-button ${selectedTab === tab.id ? "active" : ""}`}
+                  onClick={() => setSelectedTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="tab-content">
+              {selectedTab === "cultivation" && (
+                <>
+                  <div className="cultivation-section">
+                    <QiCultivationPanel
+                      state={state}
+                      tryBreakthrough={() => {
+                        const result = tryBreakthrough();
+                        if (result.success) {
+                          showSuccess("🎉 Breakthrough Successful! Welcome to the next realm!");
+                        } else {
+                          showFailure("⚠️ Breakthrough Failed! You lost 50% of your Qi.");
+                        }
+                        return result;
+                      }}
+                      usableQi={usableQi}
+                      totalQi={totalQi}
+                    />
+                  <BodyCultivationPanel
+                    state={state}
+                    tryBodyBreakthrough={() => {
+                      const result = tryBodyBreakthrough();
+                      if (result.success) {
+                        showSuccess("🎉 Body Breakthrough Successful! Your physique has advanced!");
+                      } else if (result.chance > 0) {
+                        showFailure("⚠️ Body Breakthrough Failed! You lost 30% tenacity and 1 body level.");
+                      }
+                      return result;
+                    }}
+                    calculateBodyBreakthroughChance={calculateBodyBreakthroughChance}
+                    getBodyStageIndex={getBodyStageIndex}
+                  />
+                </div>
+                <MeditationPanel
+                  meditationTypes={meditationTypes}
+                  activeMeditationId={activeMeditationId}
+                  setActiveMeditation={setActiveMeditation}
+                  getCurrentMeditationStats={getCurrentMeditationStats}
+                />
+              </>
+            )}
+
+            {selectedTab === "combat" && (
+              <>
+                {state.unlockedFeatures.includes("monster") && (
+                  <CombatSystem
+                    playerAttack={totalAttack}
+                    playerDefense={totalDefense}
+                    onVictory={processMonsterVictory}
+                    playerVitality={totalVitality}
+                    playerVitalityCap={state.vitalityCap}
+                  />
+                )}
+                <InventoryPanel inventory={state.inventory} />
+              </>
+            )}
+
+            {selectedTab === "battle" && (
+              <BattleTechniquesPanel
+                battleTechniques={battleTechniques}
+                upgradeBattleTechnique={upgradeBattleTechnique}
+                spiritStones={state.spiritStones}
+                bodyLevel={state.bodyLevel}
+              />
+            )}
+
+            {selectedTab === "alchemy" && state.unlockedFeatures.includes("alchemy") && (
+              <AlchemyPanel />
+            )}
+          </div>
         </div>
-        <MeditationPanel
-          meditationTypes={meditationTypes}
-          activeMeditationId={activeMeditationId}
-          setActiveMeditation={setActiveMeditation}
-          getCurrentMeditationStats={getCurrentMeditationStats}
-        />
-        <BattleTechniquesPanel
-          battleTechniques={battleTechniques}
-          upgradeBattleTechnique={upgradeBattleTechnique}
-          spiritStones={state.spiritStones}
-          bodyLevel={state.bodyLevel}
-        />
-        {/* Other Panels: In a grid below */}
-        <div className="other-panels">
-          {state.unlockedFeatures.includes("monster") && (
-            <CombatSystem
-              playerAttack={totalAttack}
-              playerDefense={totalDefense}
-              addSpiritStones={addSpiritStones}
-              addBodyExpNew={addBodyExpNew}
-              addTribulationPoints={addTribulationPoints}
-              playerVitality={totalVitality}
-              playerVitalityCap={state.vitalityCap}
-            />
-          )}
-          {/* Render alchemy UI when unlocked */}
-          {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
-        </div>
-        {/* Unlock toast notification */}
-        <UnlockToast feature={lastFeature} />
+
+          {/* Unlock toast notification */}
+          <UnlockToast feature={lastFeature} />
         </main>
         {/* Welcome back modal */}
         {welcomeData?.showModal && (

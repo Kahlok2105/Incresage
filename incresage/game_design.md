@@ -60,11 +60,39 @@ export interface PlayerState {
   tribulationPoints: number;     // Resource for body breakthroughs (earned from monsters)
   defeatedMonsters: string[];    // List of monster IDs defeated (for one-time TP rewards)
   
+  // Inventory System
+  inventory: InventoryItem[];    // Player's collected items
+  
   // Features & Systems
   unlockedFeatures: string[];    // ["monster", "alchemy", "bodyCultivation"]
   meditationTypes: MeditationType[]; // Available meditation techniques
   battleTechniques: BattleTechnique[]; // Available battle techniques
   activeMeditationId: string | null; // Currently active meditation
+}
+```
+
+### Inventory System Types (`src/types/game.ts`)
+```typescript
+export interface ItemTemplate {
+  id: string;                    // Unique item identifier
+  name: string;                  // Display name
+  description: string;           // Item description
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; // Item rarity
+  type: 'material' | 'consumable' | 'equipment' | 'currency'; // Item category
+  value: number;                 // Base value or effect strength
+}
+
+export interface InventoryItem {
+  templateId: string;            // Reference to ItemTemplate.id
+  quantity: number;              // Stack quantity
+  acquiredAt: number;            // Timestamp when first acquired
+}
+
+export interface ItemDropEntry {
+  itemId: string;                // Item template ID to drop
+  quantity: number;              // Base quantity to drop
+  chance: number;                // Drop chance (0-1)
+  quantityVariance?: number;     // Optional variance in quantity (±)
 }
 ```
 
@@ -111,14 +139,9 @@ export interface CultivationRealm {
 
 ### Monster (`src/constants/gameData.ts`)
 ```typescript
-export interface MonsterCore {
-  tier: number;                     // 1-10, corresponds to difficulty tiers
-  amount: number;
-}
-
 export interface MonsterDrops {
   spiritStones: number;             // Spirit stones on victory
-  monsterCores: MonsterCore[];      // Monster cores dropped
+  items: ItemDropEntry[];          // Generic item drops
 }
 
 export interface Monster {
@@ -332,30 +355,31 @@ spiritCap = (100 × (qiRealm+1) × (bodyRealm+1)) + sqrt(knowledge)
 - **Spirit:** Enhanced by battle techniques for maximum mana
 
 **Monster Stats:**
-| Monster | Difficulty | HP | Attack | EXP | TP | Spirit Stones | Monster Cores |
-|---------|------------|-----|--------|-----|----|---------------|---------------|
-| Spirit Wisp | 1 | 50 | 5 | 10 | 1 | 5 | 1x Tier 1 |
-| Forest Wolf | 2 | 100 | 10 | 20 | 2 | 10 | 1x Tier 1 |
-| Earth Golem | 3 | 200 | 15 | 35 | 3 | 15 | 1x Tier 1 |
-| Fire Imp | 4 | 150 | 25 | 50 | 4 | 20 | 1x Tier 1 |
-| Shadow Stalker | 5 | 300 | 30 | 75 | 5 | 30 | 1x Tier 1 |
-| Rock Elemental | 6 | 500 | 35 | 100 | 6 | 40 | 1x Tier 1 |
-| Wind Spirit | 7 | 400 | 50 | 150 | 7 | 50 | 1x Tier 1 |
-| Ice Golem | 8 | 800 | 60 | 200 | 8 | 75 | 1x Tier 1 |
-| Thunder Beast | 9 | 700 | 80 | 300 | 9 | 100 | 1x Tier 1 |
-| Ancient Guardian | 10 | 1200 | 100 | 500 | 10 | 150 | 2x Tier 1 |
+| Monster | Difficulty | HP | Attack | EXP | TP | Spirit Stones | Item Drops |
+|---------|------------|-----|--------|-----|----|---------------|------------|
+| Spirit Wisp | 1 | 50 | 5 | 10 | 1 | 5 | 1x Spirit Essence |
+| Forest Wolf | 2 | 100 | 10 | 20 | 2 | 10 | 1x Beast Fang |
+| Earth Golem | 3 | 200 | 15 | 35 | 3 | 15 | 1x Earth Crystal |
+| Fire Imp | 4 | 150 | 25 | 50 | 4 | 20 | 1x Flame Shard |
+| Shadow Stalker | 5 | 300 | 30 | 75 | 5 | 30 | 1x Shadow Essence |
+| Rock Elemental | 6 | 500 | 35 | 100 | 6 | 40 | 1x Stone Core |
+| Wind Spirit | 7 | 400 | 50 | 150 | 7 | 50 | 1x Wind Pearl |
+| Ice Golem | 8 | 800 | 60 | 200 | 8 | 75 | 1x Ice Crystal |
+| Thunder Beast | 9 | 700 | 80 | 300 | 9 | 100 | 1x Lightning Orb |
+| Ancient Guardian | 10 | 1200 | 100 | 500 | 10 | 150 | 2x Ancient Rune |
 
 **Combat Mechanics:**
 - Player damage: `playerAttack × (0.8 to 1.2 variance)`
 - Monster damage: `max(1, monsterAttack - playerDefense) × (0.8 to 1.2 variance)`
 - Turn-based: Player attacks first, then monster counterattacks
-- Victory: Gain spirit stones, body EXP, and tribulation points (one-time per monster type)
+- Victory: Gain spirit stones, body EXP, tribulation points (one-time per monster type), and item drops
 - Defeat: Monster escapes, player can try again
 
-**Monster Core System:**
-- Tier 1 cores: Dropped by difficulty 1-10 monsters
-- Future tiers: Higher tiers for higher difficulty monsters (planned)
-- Used for: Body cultivation (future implementation)
+**Item Drop System:**
+- Items are defined in `src/constants/items.ts` with templates and drop resolution
+- Drop chances and quantities are configured per monster
+- Items are automatically added to player inventory on victory
+- Inventory supports stacking of identical items
 
 ### 3.7 Persistence & Offline Progress
 
@@ -412,6 +436,7 @@ Where realmNumber accounts for both realm index and stage progression.
 | **BodyCultivationPanel** | Body cultivation progress, breakthrough requirements and attempts |
 | **QiCultivationPanel** | Qi cultivation progress, breakthrough requirements and attempts |
 | **AlchemyPanel** | Placeholder for alchemy system (unlocked at Qi Realm 2) |
+| **InventoryPanel** | Displays player's collected items with quantities and descriptions |
 | **UnlockToast** | Brief notification when new features are unlocked |
 | **WelcomeModal** | Shows offline progress summary when returning |
 | **NotificationContainer** | Global notification system for success/failure messages |
@@ -426,12 +451,19 @@ The root component wires together:
 - Feature-gated components based on `unlockedFeatures`
 - Welcome modal for offline progress
 - Global notification container
+- Tabbed navigation system with browser-style container
 
 **Feature Gating:**
 ```tsx
 {state.unlockedFeatures.includes("monster") && <CombatSystem />}
 {state.unlockedFeatures.includes("alchemy") && <AlchemyPanel />}
 ```
+
+**Tabbed Navigation:**
+- Four main tabs: Cultivation, Combat, Upgrades, Alchemy
+- Tabs are conditionally visible based on feature unlocks
+- Browser-style tab container with unified content panel
+- Active tab switches content dynamically
 
 ---
 
@@ -442,6 +474,7 @@ The root component wires together:
 | `src/types/game.ts` | TypeScript interfaces for all game data |
 | `src/constants/cultivationRealms.ts` | Qi and Body realm definitions (18 stages each) |
 | `src/constants/gameData.ts` | Monster pool, meditation types, and battle techniques |
+| `src/constants/items.ts` | Item templates and drop resolution functions |
 | `src/utils/gameMath.ts` | Mathematical utilities for scaling and formatting |
 | `src/hooks/useGameLoop.ts` | Core game loop, state management, persistence |
 | `src/hooks/useNotifications.ts` | Notification system hook |
@@ -453,11 +486,12 @@ The root component wires together:
 | `src/components/BodyCultivationPanel.tsx` | Body cultivation progress and breakthrough UI |
 | `src/components/QiCultivationPanel.tsx` | Qi cultivation progress and breakthrough UI |
 | `src/components/AlchemyPanel.tsx` | Placeholder for future alchemy system |
+| `src/components/InventoryPanel.tsx` | Player inventory display with item quantities |
 | `src/components/UnlockToast.tsx` | Feature unlock notification |
 | `src/components/WelcomeModal.tsx` | Offline progress summary modal |
 | `src/components/NotificationContainer.tsx` | Global notification display |
-| `src/App.tsx` | Root component composition |
-| `src/App.css` | Styling for all components |
+| `src/App.tsx` | Root component composition with tabbed navigation |
+| `src/App.css` | Styling for all components including tab system |
 
 ---
 
@@ -473,6 +507,9 @@ The root component wires together:
 - Lifespan system with activity-based growth
 - Combat system with turn-based battles and tribulation points
 - Body cultivation with EXP, levels, and tribulation point requirements
+- Inventory system with generic item drops and stacking
+- Universal item drop system for monsters
+- Tabbed navigation with browser-style container UI
 - Offline progress calculation with WelcomeModal
 - Notification system for user feedback
 - Feature unlocking based on realm progression
@@ -502,9 +539,11 @@ Incresage is a sophisticated cultivation idle game with:
 - **Probabilistic breakthroughs** with path-specific risk/reward mechanics
 - **Comprehensive stat system** with 8+ interconnected stats
 - **Full combat system** with turn-based battles, tribulation points, and body EXP
+- **Universal item drop system** with inventory management and stacking
+- **Tabbed navigation** with browser-style container UI
 - **Offline progress** with detailed return summaries
 - **Feature gating** that unlocks content as players advance
 - **Clean mathematical scaling** using exponential formulas
 - **Full persistence** with automatic save/load
 
-The architecture is designed for extensibility, allowing easy addition of new realms, monsters, meditation techniques, battle techniques, and game systems.
+The architecture is designed for extensibility, allowing easy addition of new realms, monsters, meditation techniques, battle techniques, items, and game systems.
