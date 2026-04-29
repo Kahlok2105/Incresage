@@ -6,7 +6,9 @@ interface InventoryPanelProps {
 }
 
 export const InventoryPanel: React.FC<InventoryPanelProps> = ({ inventory, onItemClick }) => {
-  const sortedItems = [...inventory].sort((a, b) => {
+  const sortedItems = [...inventory]
+  .filter(item => !(item.type === 'equipment' && item.isEquipped))
+  .sort((a, b) => {
     if (a.rarity !== b.rarity) {
       const order = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
       return order.indexOf(a.rarity) - order.indexOf(b.rarity);

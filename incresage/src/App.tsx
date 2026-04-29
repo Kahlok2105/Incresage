@@ -96,7 +96,7 @@ export default function App() {
               lifespan={state.lifespan}
               maxLifespan={state.maxLifespan}
               spiritStones={state.spiritStones}
-              inventory={state.inventory}
+              inventory={state.inventory.filter(item => !(item.type === 'equipment' && item.isEquipped))}
               onToggleEquip={toggleEquipItem}
             />
         </header>
