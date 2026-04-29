@@ -45,7 +45,7 @@ export interface BattleTechnique {
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 export type ItemType = 'material' | 'pill' | 'currency' | 'equipment';
-export type ItemSlot = 'weapon' | 'armor' | 'accessory';
+export type ItemSlot = 'weapon' | 'armor' | 'accessory' | 'head' | 'body' | 'gloves' | 'shoes' | 'offhand';
 
 export interface ItemStats {
   vitality?: number;

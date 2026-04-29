@@ -6,7 +6,7 @@ import { CombatSystem } from "./components/CombatSystem";
 import { AlchemyPanel } from "./components/AlchemyPanel";
 import { BodyCultivationPanel } from "./components/BodyCultivationPanel";
 import { QiCultivationPanel } from "./components/QiCultivationPanel";
-import { PlayerStatsPanel } from "./components/PlayerStatsPanel";
+import { Cultivator } from "./components/Cultivator";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
@@ -39,7 +39,9 @@ export default function App() {
     totalVitality,
     totalSpirit,
     battleTechniques,
-    upgradeBattleTechnique
+    upgradeBattleTechnique,
+    useInventoryItem,
+    toggleEquipItem
   } = useGameLoop();
 
   // Notification system
@@ -81,7 +83,7 @@ export default function App() {
   return (
     <div className="app">
         <header className="status-panel">
-            <PlayerStatsPanel
+            <Cultivator
               vitality={totalVitality}
               vitalityCap={state.vitalityCap}
               spirit={totalSpirit}
@@ -94,6 +96,8 @@ export default function App() {
               lifespan={state.lifespan}
               maxLifespan={state.maxLifespan}
               spiritStones={state.spiritStones}
+              inventory={state.inventory}
+              onToggleEquip={toggleEquipItem}
             />
         </header>
         <main className="game-panel">
@@ -165,7 +169,7 @@ export default function App() {
                     defeatedMonsters={state.defeatedMonsters}
                   />
                 )}
-                <InventoryPanel inventory={state.inventory} />
+                <InventoryPanel inventory={state.inventory} onItemClick={(item) => useInventoryItem(item.instanceId)} />
               </>
             )}
 

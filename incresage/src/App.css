@@ -678,6 +678,239 @@
   align-self: flex-start;
 }
 
+.inventory-panel,
+.equipment-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(111, 66, 193, 0.15);
+  border-radius: 24px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.inventory-header,
+.equipment-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.inventory-header h2,
+.equipment-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--accent);
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 14px;
+}
+
+.inventory-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 130px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(111, 66, 193, 0.16);
+  background: rgba(247, 244, 255, 0.95);
+  color: #3b2c65;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.inventory-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(111, 66, 193, 0.12);
+}
+
+.inventory-tile.equipped {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.15);
+}
+
+.inventory-icon {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.inventory-name {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.inventory-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: #6d56a6;
+  opacity: 0.9;
+}
+
+.inventory-quantity {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: rgba(111, 66, 193, 0.1);
+  color: #5c3d90;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.equipment-layout {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 240px minmax(140px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.equipment-column {
+  display: grid;
+  gap: 14px;
+}
+
+.equipment-slot {
+  display: grid;
+  gap: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(111, 66, 193, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.equipment-slot:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(111, 66, 193, 0.12);
+}
+
+.equipment-slot.empty {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.equipment-slot.filled {
+  border-color: #7c3aed;
+}
+
+.slot-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6b4db8;
+}
+
+.slot-icon {
+  font-size: 1.8rem;
+}
+
+.slot-name {
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.slot-detail {
+  font-size: 0.82rem;
+  color: #635b7f;
+}
+
+.slot-empty {
+  color: #7c719c;
+  font-weight: 600;
+}
+
+.equipment-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.avatar-shell {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 0.75;
+  border: 2px dashed rgba(111, 66, 193, 0.18);
+  border-radius: 32px;
+  background: rgba(247, 244, 255, 0.9);
+  position: relative;
+  padding: 28px 18px 24px;
+  display: grid;
+  place-items: center;
+}
+
+.avatar-head,
+.avatar-neck,
+.avatar-torso,
+.avatar-hips,
+.avatar-legs {
+  position: absolute;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.24);
+  border-radius: 999px;
+}
+
+.avatar-head {
+  width: 42px;
+  height: 42px;
+  top: 18px;
+}
+
+.avatar-neck {
+  width: 16px;
+  height: 28px;
+  top: 70px;
+}
+
+.avatar-torso {
+  width: 110px;
+  height: 118px;
+  top: 108px;
+  border-radius: 40px;
+}
+
+.avatar-hips {
+  width: 94px;
+  height: 64px;
+  top: 208px;
+}
+
+.avatar-legs {
+  width: 82px;
+  height: 96px;
+  top: 278px;
+}
+
+.equipment-accessory-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.equipment-accessory-slot {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .equipment-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-avatar {
+    min-height: auto;
+  }
+}
+
 /* Unlock toast */
 .unlock-toast {
   position: fixed;

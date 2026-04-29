@@ -553,6 +553,57 @@ export function useGameLoop(tickMs: number = 1_000) {
     }));
   };
 
+  const useInventoryItem = (instanceId: string) => {
+    setState((prev) => {
+      const item = prev.inventory.find((entry) => entry.instanceId === instanceId);
+      if (!item) return prev;
+
+      if (item.type === 'equipment') {
+        const isEquipping = !item.isEquipped;
+        return {
+          ...prev,
+          inventory: prev.inventory.map((entry) => {
+            if (entry.instanceId === instanceId && entry.type === 'equipment') {
+              return { ...entry, isEquipped: !entry.isEquipped };
+            }
+
+            if (
+              isEquipping &&
+              entry.type === 'equipment' &&
+              entry.slot === item.slot &&
+              entry.isEquipped &&
+              item.slot !== 'accessory'
+            ) {
+              return { ...entry, isEquipped: false };
+            }
+
+            return entry;
+          })
+        };
+      }
+
+      if (item.quantity <= 1) {
+        return {
+          ...prev,
+          inventory: prev.inventory.filter((entry) => entry.instanceId !== instanceId)
+        };
+      }
+
+      return {
+        ...prev,
+        inventory: prev.inventory.map((entry) =>
+          entry.instanceId === instanceId
+            ? { ...entry, quantity: entry.quantity - 1 }
+            : entry
+        )
+      };
+    });
+  };
+
+  const toggleEquipItem = (instanceId: string) => {
+    useInventoryItem(instanceId);
+  };
+
   const processMonsterVictory = (monster: Monster) => {
     const drops = resolveItemDrops(monster.drops.items ?? []);
 
@@ -888,6 +939,8 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     addBodyExpNew,
     addTribulationPoints,
     addInventoryItems,
+    useInventoryItem,
+    toggleEquipItem,
     processMonsterVictory,
     inventory: state.inventory,
     getRandomMonster,

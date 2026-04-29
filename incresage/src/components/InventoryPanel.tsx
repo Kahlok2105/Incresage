@@ -2,9 +2,10 @@ import type { InventoryItem } from "../types/game";
 
 interface InventoryPanelProps {
   inventory: InventoryItem[];
+  onItemClick?: (item: InventoryItem) => void;
 }
 
-export const InventoryPanel: React.FC<InventoryPanelProps> = ({ inventory }) => {
+export const InventoryPanel: React.FC<InventoryPanelProps> = ({ inventory, onItemClick }) => {
   const sortedItems = [...inventory].sort((a, b) => {
     if (a.rarity !== b.rarity) {
       const order = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
@@ -14,46 +15,32 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ inventory }) => 
   });
 
   return (
-    <section className="inventory-panel" style={{
-      padding: '16px',
-      borderRadius: '12px',
-      border: '2px solid #7f5af0',
-      background: 'linear-gradient(180deg, rgba(22, 22, 39, 0.96), rgba(15, 15, 31, 0.94))',
-      color: '#f7f4ff',
-      width: '100%',
-      boxSizing: 'border-box',
-      marginTop: '16px'
-    }}>
-      <h2 style={{ marginBottom: '12px', color: '#c084fc' }}>Inventory</h2>
+    <section className="inventory-panel">
+      <div className="inventory-header">
+        <h2>Inventory</h2>
+        <p>Your items are arranged in a responsive grid. Click consumables to use them or equipment to equip / unequip.</p>
+      </div>
+
       {sortedItems.length === 0 ? (
-        <p style={{ margin: 0, lineHeight: 1.6 }}>Your inventory is empty. Defeat monsters or gather materials to fill it.</p>
+        <p className="inventory-empty">Your inventory is empty. Defeat monsters or gather materials to fill it.</p>
       ) : (
-        <div style={{ display: 'grid', gap: '10px' }}>
+        <div className="inventory-grid">
           {sortedItems.map((item) => (
-            <div
+            <button
               key={item.instanceId}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '32px minmax(0, 1fr) auto',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '10px',
-                borderRadius: '10px',
-                background: 'rgba(255, 255, 255, 0.04)'
-              }}
+              type="button"
+              className={`inventory-tile ${item.type === 'equipment' && item.isEquipped ? 'equipped' : ''}`}
+              onClick={() => onItemClick?.(item)}
+              title={`${item.name}\n${item.description}`}
             >
-              <div style={{ fontSize: '1.4rem' }}>{item.icon}</div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold' }}>{item.name}</span>
-                  <span style={{ opacity: 0.8 }}>x{item.quantity}</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '0.8rem', opacity: 0.8 }}>
-                  <span>{item.type}</span>
-                  <span>{item.rarity}</span>
-                </div>
+              <div className="inventory-icon">{item.icon}</div>
+              <div className="inventory-name">{item.name}</div>
+              <div className="inventory-meta">
+                <span>{item.rarity}</span>
+                <span>{item.type}</span>
               </div>
-            </div>
+              {item.quantity > 1 && <span className="inventory-quantity">x{item.quantity}</span>}
+            </button>
           ))}
         </div>
       )}
