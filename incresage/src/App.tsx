@@ -162,6 +162,7 @@ export default function App() {
                     onVictory={processMonsterVictory}
                     playerVitality={totalVitality}
                     playerVitalityCap={state.vitalityCap}
+                    defeatedMonsters={state.defeatedMonsters}
                   />
                 )}
                 <InventoryPanel inventory={state.inventory} />

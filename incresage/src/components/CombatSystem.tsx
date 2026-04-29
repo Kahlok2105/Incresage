@@ -8,6 +8,7 @@ interface CombatSystemProps {
   playerVitality: number;
   playerVitalityCap: number;
   onVictory: (monster: Monster) => void;
+  defeatedMonsters: string[];
 }
 
 
@@ -18,7 +19,8 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
   playerDefense,
   playerVitality,
   playerVitalityCap,
-  onVictory
+  onVictory,
+  defeatedMonsters
 }) => {
   const [combatState, setCombatState] = useState<CombatState>({
     isActive: false,
@@ -63,9 +65,10 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
           onVictory(monster);
         }, 0);
 
-        const tpMessage = monster.tpReward > 0
+        const isFirstDefeat = !defeatedMonsters.includes(monster.id);
+        const tpMessage = monster.tpReward > 0 && isFirstDefeat
           ? ` and ${monster.tpReward} Tribulation Points!`
-          : " (TP already collected)";
+          : "";
 
         const lootMessage = monster.drops.items?.length
           ? "Loot has been added to your inventory."
