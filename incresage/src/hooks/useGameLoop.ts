@@ -775,7 +775,7 @@ const tryBreakthroughGuaranteed = (): { success: boolean; chance: number } => {
 
   /** Calculate body stage index (0-17) */
   const getBodyStageIndex = () => {
-    return state.currentBodyRealmIndex * 3 + state.currentQiStage;
+    return state.currentBodyRealmIndex * 3 + state.currentBodyStage;
   };
 
   /** Calculate body breakthrough chance */
