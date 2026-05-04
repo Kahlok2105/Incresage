@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from "react";
 
-
-
-
-
-export const UnlockToast: React.FC<{ feature: string | null }> = ({ feature }) => {
+export const UnlockToast: React.FC<{ unlockedFeatures: string[] }> = ({ unlockedFeatures }) => {
   const [visible, setVisible] = useState(false);
+  const [lastFeature, setLastFeature] = useState<string | null>(null);
 
   useEffect(() => {
-    if (feature) {
-      setVisible(true);
-      const timer = setTimeout(() => setVisible(false), 3000);
-      return () => clearTimeout(timer);
+    // When unlockedFeatures length increases, capture the newly added feature.
+    const features = unlockedFeatures;
+    if (features.length) {
+      const stored = (lastFeature && features.includes(lastFeature)) ? lastFeature : null;
+      if (!stored) {
+        // Assume the last element is the newest unlock.
+        const newFeature = features[features.length - 1];
+        setLastFeature(newFeature);
+        setVisible(true);
+        const timer = setTimeout(() => setVisible(false), 3000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [feature]);
+  }, [unlockedFeatures]);
 
-  if (!visible || !feature) return null;
+  if (!visible || !lastFeature) return null;
 
   return (
     <div className="unlock-toast" role="alert">
-      🎉 {feature.charAt(0).toUpperCase() + feature.slice(1)} feature unlocked!
+      🎉 {lastFeature.charAt(0).toUpperCase() + lastFeature.slice(1)} feature unlocked!
     </div>
   );
 };
-

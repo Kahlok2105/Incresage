@@ -1,5 +1,5 @@
 import React from "react";
-import type { BattleTechnique } from "../types/game";
+import type { BattleTechnique } from "../../types/game";
 
 /**
  * Battle techniques panel that displays available battle techniques and allows upgrading.

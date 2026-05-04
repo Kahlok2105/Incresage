@@ -1,19 +1,19 @@
 // React import removed; JSX runtime handles it automatically.
 import "./App.css";
 import { useGameLoop } from "./hooks/useGameLoop";
-import { MeditationPanel } from "./components/MeditationPanel";
-import { CombatSystem } from "./components/CombatSystem";
-import { AlchemyPanel } from "./components/AlchemyPanel";
-import { BodyCultivationPanel } from "./components/BodyCultivationPanel";
-import { QiCultivationPanel } from "./components/QiCultivationPanel";
+import { MeditationPanel } from "./features/cultivation/MeditationPanel";
+import { CombatSystem } from "./features/combat/CombatSystem";
+import { AlchemyPanel } from "./features/alchemy/AlchemyPanel";
+import { BodyCultivationPanel } from "./features/cultivation/BodyCultivationPanel";
+import { QiCultivationPanel } from "./features/cultivation/QiCultivationPanel";
 import { Cultivator } from "./components/Cultivator";
-import { InventoryPanel } from "./components/InventoryPanel";
+import { InventoryPanel } from "./features/inventory/InventoryPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
 import { WelcomeModal } from "./components/WelcomeModal";
-import { BattleTechniquesPanel } from "./components/BattleTechniquesPanel";
+import { BattleTechniquesPanel } from "./features/upgrades/BattleTechniquesPanel";
 import { useNotifications } from "./hooks/useNotifications";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 type TabId = "cultivation" | "combat" | "battle" | "alchemy";
 
@@ -21,6 +21,7 @@ type TabId = "cultivation" | "combat" | "battle" | "alchemy";
 export default function App() {
   const {
     state,
+    resetGame,
     tryBreakthrough,
     processMonsterVictory,
     usableQi,
@@ -65,23 +66,22 @@ export default function App() {
     }
   }, [selectedTab, visibleTabIds, visibleTabs]);
 
-  // Track the most recently unlocked feature to show a toast notification.
-  const [lastFeature, setLastFeature] = useState<string | null>(null);
-  useEffect(() => {
-    // When unlockedFeatures length increases, capture the newly added feature.
-    const features = state.unlockedFeatures;
-    if (features.length) {
-      const stored = (lastFeature && features.includes(lastFeature)) ? lastFeature : null;
-      if (!stored) {
-        // Assume the last element is the newest unlock.
-        setLastFeature(features[features.length - 1]);
-      }
-    }
-  }, [state.unlockedFeatures]);
-
 
   return (
     <div className="app">
+        <div style={{ textAlign: 'right', padding: '8px 16px' }}>
+          <button onClick={resetGame} style={{
+            background: '#dc2626',
+            color: 'white',
+            border: 'none',
+            padding: '6px 12px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            cursor: 'pointer'
+          }}>
+            🔄 Reset Game
+          </button>
+        </div>
         <header className="status-panel">
             <Cultivator
               vitality={totalVitality}
@@ -122,33 +122,34 @@ export default function App() {
                     <QiCultivationPanel
                       state={state}
                       tryBreakthrough={() => {
-                        const result = tryBreakthrough();
-                        if (result.success) {
+                        const success = tryBreakthrough();
+                        if (success) {
                           showSuccess("🎉 Breakthrough Successful! Welcome to the next realm!");
                         } else {
                           showFailure("⚠️ Breakthrough Failed! You lost 50% of your Qi.");
                         }
-                        return result;
+                        return { success };
                       }}
                       usableQi={usableQi}
                       totalQi={totalQi}
                     />
-                  <BodyCultivationPanel
-                    state={state}
-                    tryBodyBreakthrough={() => {
-                      const result = tryBodyBreakthrough();
-                      if (result.success) {
-                        showSuccess("🎉 Body Breakthrough Successful! Your physique has advanced!");
-                      } else if (result.chance > 0) {
-                        showFailure("⚠️ Body Breakthrough Failed! You lost 30% tenacity and 1 body level.");
-                      }
-                      return result;
-                    }}
-                    calculateBodyBreakthroughChance={calculateBodyBreakthroughChance}
-                    getBodyStageIndex={getBodyStageIndex}
-                  />
-                </div>
-                <MeditationPanel
+                    <BodyCultivationPanel
+                      state={state}
+                      tryBodyBreakthrough={() => {
+                        const success = tryBodyBreakthrough();
+                        const chance = calculateBodyBreakthroughChance();
+                        if (success) {
+                          showSuccess("🎉 Body Breakthrough Successful! Your physique has advanced!");
+                        } else if (chance > 0) {
+                          showFailure("⚠️ Body Breakthrough Failed! You lost 30% tenacity and 1 body level.");
+                        }
+                        return { success, chance };
+                      }}
+                      calculateBodyBreakthroughChance={calculateBodyBreakthroughChance}
+                      getBodyStageIndex={getBodyStageIndex}
+                    />
+                  </div>
+                  <MeditationPanel
                   meditationTypes={meditationTypes}
                   activeMeditationId={activeMeditationId}
                   setActiveMeditation={setActiveMeditation}
@@ -189,7 +190,7 @@ export default function App() {
         </div>
 
           {/* Unlock toast notification */}
-          <UnlockToast feature={lastFeature} />
+          <UnlockToast unlockedFeatures={state.unlockedFeatures} />
         </main>
         {/* Welcome back modal */}
         {welcomeData?.showModal && (

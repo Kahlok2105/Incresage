@@ -1,6 +1,6 @@
 import React from "react";
-import { QI_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
-import type { PlayerState } from "../types/game";
+import { QI_REALMS, getCurrentRealm } from "../../constants/cultivationRealms";
+import type { PlayerState } from "../../types/game";
 
 /**
  * Displays the player's qi cultivation progress and breakthrough options.

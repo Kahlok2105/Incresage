@@ -1,4 +1,4 @@
-import type { Monster } from "../types/game";
+import type { Monster } from "../types/combat";
 import { calculateMonsterExp, calculateMonsterTP } from "../utils/gameMath";
 
 /**
@@ -156,81 +156,5 @@ export const MONSTERS: Monster[] = [
         { itemId: 'jade_pendant', chance: 0.12, min: 1, max: 1 }
       ]
     }
-  }
-];
-
-/**
- * Starting meditation types available to players.
- */
-export const MEDITATION_TYPES = [
-  {
-    id: "explore_surroundings",
-    name: "Explore Surroundings",
-    baseCuriosity: 1,
-    baseTenacity: 0,
-    baseQi: 1,
-    baseKnowledge: 0,
-    level: 1,
-    currentExp: 0,
-    expToNextLevel: 100,
-    maxLevel: 100
-  },
-  {
-    id: "explore_self",
-    name: "Explore Self",
-    baseCuriosity: 0,
-    baseTenacity: 1,
-    baseQi: 1,
-    baseKnowledge: 0,
-    level: 1,
-    currentExp: 0,
-    expToNextLevel: 100,
-    maxLevel: 100
-  },
-  {
-    id: "focus_mind",
-    name: "Focus on Mind",
-    baseCuriosity: 0,
-    baseTenacity: 0,
-    baseQi: 1,
-    baseKnowledge: 1,
-    level: 1,
-    currentExp: 0,
-    expToNextLevel: 100,
-    maxLevel: 100
-  }
-];
-
-/**
- * Starting battle techniques available to players.
- */
-export const BATTLE_TECHNIQUES = [
-  {
-    id: "iron_skin_mantra",
-    name: "Iron Skin Mantra",
-    stat: "defense" as const,
-    baseValue: 2,
-    level: 0
-  },
-  {
-    id: "tigers_breath",
-    name: "Tiger's Breath",
-    stat: "attack" as const,
-    baseValue: 2,
-    level: 0
-  },
-  {
-    id: "boundless_heart",
-    name: "Boundless Heart",
-    stat: "vitality" as const,
-    baseValue: 5,
-    level: 0
-  },
-  {
-    id: "spirit_refinement",
-    name: "Spirit Refinement",
-    stat: "spirit" as const,
-    baseValue: 5,
-    level: 0
   }
 ];

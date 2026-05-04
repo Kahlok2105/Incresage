@@ -1,6 +1,6 @@
 import React from "react";
-import { BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
-import { calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
+import { BODY_REALMS, getCurrentRealm } from "../../constants/cultivationRealms";
+import { calculateTenacityRequired, calculateTPRequired } from "../../utils/gameMath";
 
 /**
  * Displays the player's body cultivation progress and breakthrough options.

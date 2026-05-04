@@ -1,4 +1,4 @@
-import type { InventoryItem } from "../types/game";
+import type { InventoryItem } from "../../types/game";
 
 interface InventoryPanelProps {
   inventory: InventoryItem[];

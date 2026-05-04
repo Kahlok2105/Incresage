@@ -1,18 +1,6 @@
 import type {
-  ItemDropEntry,
-  ItemTemplate,
-  InventoryItem,
-  InventoryConsumableItem,
-  InventoryEquipmentItem
-} from "../types/game";
-
-const randomInt = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-const isEquipmentTemplate = (template: ItemTemplate): template is Exclude<ItemTemplate, { type: 'material' | 'pill' | 'currency' }> => {
-  return template.type === 'equipment';
-};
+  ItemTemplate
+} from "../types/inventory";
 
 export const ITEM_TEMPLATES: Record<string, ItemTemplate> = {
   spirit_stone: {
@@ -111,53 +99,3 @@ export const ITEM_TEMPLATES: Record<string, ItemTemplate> = {
   }
 };
 
-export const createItemInstance = (
-  templateId: string,
-  quantity: number = 1
-): InventoryItem => {
-  const template = ITEM_TEMPLATES[templateId];
-  const instanceId = crypto.randomUUID();
-
-  if (!template) {
-    throw new Error(`Unknown item template: ${templateId}`);
-  }
-
-  if (isEquipmentTemplate(template)) {
-    return {
-      ...template,
-      instanceId,
-      quantity: 1,
-      isEquipped: false
-    } as InventoryEquipmentItem;
-  }
-
-  return {
-    ...template,
-    instanceId,
-    quantity
-  } as InventoryConsumableItem;
-};
-
-export const resolveItemDrops = (dropTable: ItemDropEntry[]): InventoryItem[] => {
-  return dropTable.flatMap((entry) => {
-    if (Math.random() > entry.chance) {
-      return [];
-    }
-
-    const amount = entry.quantity ??
-      (entry.min !== undefined && entry.max !== undefined
-        ? randomInt(entry.min, entry.max)
-        : entry.min ?? 1);
-
-    const template = ITEM_TEMPLATES[entry.itemId];
-    if (!template) {
-      return [];
-    }
-
-    if (isEquipmentTemplate(template)) {
-      return Array.from({ length: amount }, () => createItemInstance(entry.itemId));
-    }
-
-    return [createItemInstance(entry.itemId, amount)];
-  });
-};

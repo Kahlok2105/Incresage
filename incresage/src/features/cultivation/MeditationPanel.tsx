@@ -1,5 +1,5 @@
 import React from "react";
-import type { MeditationType } from "../types/game";
+import type { MeditationType } from "../../types/game";
 
 /**
  * Meditation panel that displays available meditation types and allows selection.

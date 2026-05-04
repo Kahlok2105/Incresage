@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { MONSTERS } from "../constants/gameData";
-import type { Monster, CombatState } from "../types/game";
+import type { Monster } from "../../types/combat";
+import type { CombatState } from "../../types/combat";
+import { MonsterList } from "./MonsterList";
+import { CombatView } from "./CombatView";
 
 interface CombatSystemProps {
   playerAttack: number;
@@ -10,9 +12,6 @@ interface CombatSystemProps {
   onVictory: (monster: Monster) => void;
   defeatedMonsters: string[];
 }
-
-
-
 
 export const CombatSystem: React.FC<CombatSystemProps> = ({
   playerAttack,
@@ -171,115 +170,20 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       });
   };
 
-  // Calculate HP percentages for bars
-  const getPlayerHPPercent = () => {
-    return (combatState.playerHP / playerVitalityCap) * 100;
-  };
-
-  const getMonsterHPPercent = () => {
-    if (!combatState.monster) return 0;
-    return (combatState.monsterHP / combatState.monster.hp) * 100;
-  };
-
   // Monster List View
   if (!selectedMonster) {
-    return (
-      <section className="combat-system">
-        <h2>⚔️ Monster Hunt</h2>
-        <p>Challenge monsters to earn spirit stones and body cultivation experience!</p>
-        <div className="monster-list">
-          {MONSTERS.map((monster) => (
-            <button
-              key={monster.id}
-              onClick={() => startCombat(monster)}
-              className="monster-card"
-            >
-              <div className="monster-card-header">
-                <span className="monster-name">{monster.name}</span>
-                <span className={`difficulty-badge diff-${monster.difficulty}`}>
-                  ★ {monster.difficulty}
-                </span>
-              </div>
-              <div className="monster-card-stats">
-                <span>HP: {monster.hp}</span>
-                <span>ATK: {monster.attack}</span>
-              </div>
-              <div className="monster-card-rewards">
-                <span>🪨 {monster.drops.spiritStones}</span>
-                <span>⭐ {monster.expReward} EXP</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </section>
-    );
+    return <MonsterList onSelect={startCombat} />;
   }
 
   // Combat View
   return (
-    <section className="combat-system active">
-      <h2>⚔️ Combat</h2>
-      
-      {/* Monster Display */}
-      {combatState.monster && (
-        <div className="monster-display">
-          <div className="monster-display-header">
-            <h3>{combatState.monster.name}</h3>
-            <span className={`difficulty-badge diff-${combatState.monster.difficulty}`}>
-              ★ {combatState.monster.difficulty}
-            </span>
-          </div>
-          <div className="hp-bar monster-hp">
-            <div 
-              className="hp-fill" 
-              style={{ width: `${getMonsterHPPercent()}%` }}
-            />
-            <span>{Math.floor(combatState.monsterHP)} / {Math.floor(combatState.monster.hp)} HP</span>
-          </div>
-          <p className="monster-stats">ATK: {combatState.monster.attack}</p>
-        </div>
-      )}
-
-      {/* Player HP Display */}
-      <div className="player-display">
-        <h3>Your HP</h3>
-        <div className="hp-bar player-hp">
-          <div 
-            className="hp-fill" 
-            style={{ width: `${getPlayerHPPercent()}%` }}
-          />
-          <span>{Math.floor(combatState.playerHP)} / {Math.floor(playerVitalityCap)} HP</span>
-        </div>
-        <p className="player-stats">ATK: {playerAttack} | DEF: {playerDefense}</p>
-      </div>
-
-      {/* Combat Controls */}
-      {combatState.isActive && (
-        <div className="combat-controls">
-          <div className="battle-status">
-            {combatState.isPlayerTurn ? "⏳ Preparing attack..." : "⚔️ Monster is attacking..."}
-          </div>
-          <button onClick={fleeCombat} className="flee-btn">
-            🏃 Flee
-          </button>
-        </div>
-      )}
-
-      {/* Combat Log */}
-      <div className="combat-log">
-        {combatState.log.slice(-5).map((entry, index) => (
-          <p key={index} className={index === combatState.log.length - 1 ? "latest" : ""}>
-            {entry}
-          </p>
-        ))}
-      </div>
-
-      {/* Back Button */}
-      {!combatState.isActive && (
-        <button onClick={goBackToList} className="back-btn">
-          ← Back to Monster List
-        </button>
-      )}
-    </section>
+    <CombatView
+      combatState={combatState}
+      playerAttack={playerAttack}
+      playerDefense={playerDefense}
+      playerVitalityCap={playerVitalityCap}
+      onFlee={fleeCombat}
+      onBack={goBackToList}
+    />
   );
 };
