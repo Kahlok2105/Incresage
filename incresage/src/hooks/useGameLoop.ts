@@ -1,3 +1,4 @@
+import { QI_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
 import { useGameState } from "./useGameState";
 import { useGameTick } from "./useGameTick";
 import { useBreakthrough } from "./useBreakthrough";
@@ -5,6 +6,7 @@ import { useCombat } from "./useCombat";
 import { useUpgrades } from "./useUpgrades";
 import { useInventory } from "./useInventory";
 import { useMeditation } from "./useMeditation";
+import { getBattleBonuses } from "../utils/statCalc";
 
 /**
  * Core game loop orchestrator
@@ -14,8 +16,7 @@ import { useMeditation } from "./useMeditation";
  */
 export function useGameLoop(tickMs: number = 1_000) {
   // Single source of truth for game state
-  const { state, setState, resetGame } = useGameState();
-
+  const { state, setState, resetGame: resetGameState } = useGameState();
   // Initialize all domain hooks
   const gameTick = useGameTick(state, setState, tickMs);
   const breakthrough = useBreakthrough(state, setState);
@@ -23,6 +24,11 @@ export function useGameLoop(tickMs: number = 1_000) {
   const upgrades = useUpgrades(state, setState);
   const inventory = useInventory(state, setState);
   const meditation = useMeditation(state, setState);
+
+  const resetGame = () => {
+    resetGameState();
+    gameTick.resetMeditationState();
+  };
 
   // Debug helper
   const addTestQi = () => {
@@ -39,6 +45,8 @@ export function useGameLoop(tickMs: number = 1_000) {
     totalQiGained: number;
     statsGained: Record<string, number>;
   };
+
+  const battleBonuses = getBattleBonuses(state);
 
   return {
     state,
@@ -67,17 +75,17 @@ export function useGameLoop(tickMs: number = 1_000) {
 
     // Calculated stats for UI
     usableQi: state.qi,
-    totalQi: state.qi,
+    totalQi: getCurrentRealm(QI_REALMS, state.currentQiRealmIndex, state.currentQiStage).qiCap,
     meditationTypes: state.meditationTypes,
     activeMeditationId: state.activeMeditationId,
-    totalAttack: state.attack,
-    totalDefense: state.defense,
-    totalVitality: state.vitality,
-    totalSpirit: state.spirit,
+    totalAttack: state.attack + battleBonuses.attack,
+    totalDefense: state.defense + battleBonuses.defense,
+    totalVitality: state.vitality + battleBonuses.vitality,
+    totalSpirit: state.spirit + battleBonuses.spirit,
     battleTechniques: state.battleTechniques,
 
     // Welcome modal
-    welcomeData: null as WelcomeData | null,
-    clearWelcomeData: () => {}
+    welcomeData: gameTick.welcomeData,
+    clearWelcomeData: gameTick.clearWelcomeData,
   };
 }

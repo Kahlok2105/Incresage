@@ -152,7 +152,7 @@ export function useGameState() {
   const resetGame = () => {
     if (window.confirm("Are you sure? This will wipe all cultivation progress.")) {
       localStorage.removeItem("gameState");
-      setState(DEFAULT_STATE);
+      setStateAndPersist(DEFAULT_STATE);
     }
   };
 

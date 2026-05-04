@@ -8,39 +8,37 @@ const calculateExpRequired = (level: number) => {
   return Math.floor(100 * Math.pow(1.15, level - 1));
 };
 
-export function useMeditation(state: PlayerState, setState: React.Dispatch<React.SetStateAction<PlayerState>>) {
+    export const gainMeditationExperience = (
+      prev: PlayerState,
+      deltaTimeSeconds: number
+    ) => {
+      if (!prev.activeMeditationId) return prev.meditationTypes;
 
-  const gainMeditationExperience = () => {
-    if (!state.activeMeditationId) return;
-
-    setState(prev => {
-      const meditationTypes = prev.meditationTypes.map(meditation => {
+      return prev.meditationTypes.map(meditation => {
         if (meditation.id !== prev.activeMeditationId) return meditation;
 
-        const newExp = meditation.currentExp + 1;
-        let { level, currentExp, expToNextLevel } = meditation;
+        let newExp = meditation.currentExp + deltaTimeSeconds;
+        let newLevel = meditation.level;
+        let newExpToNextLevel = meditation.expToNextLevel;
 
-        if (newExp >= expToNextLevel) {
-          level += 1;
-          currentExp = 0;
-          expToNextLevel = calculateExpRequired(level);
-        } else {
-          currentExp = newExp;
+        while (newExp >= newExpToNextLevel && newLevel < meditation.maxLevel) {
+          newExp -= newExpToNextLevel;
+          newLevel += 1;
+          newExpToNextLevel = calculateExpRequired(newLevel);
         }
 
-        return {
-          ...meditation,
-          level,
-          currentExp,
-          expToNextLevel
-        };
+        return { ...meditation, level: newLevel, currentExp: newExp, expToNextLevel: newExpToNextLevel };
       });
+    };
 
-      return {
-        ...prev,
-        meditationTypes
-      };
-    });
+export function useMeditation(state: PlayerState, setState: React.Dispatch<React.SetStateAction<PlayerState>>) {
+
+    const gainMeditationExperienceTick = () => {
+    if (!state.activeMeditationId) return;
+    setState(prev => ({
+      ...prev,
+      meditationTypes: gainMeditationExperience(prev, 1)
+    }));
   };
 
   const setActiveMeditation = (meditationId: string | null) => {
@@ -86,15 +84,15 @@ export function useMeditation(state: PlayerState, setState: React.Dispatch<React
     const multiplier = calculateMeditationMultiplier(activeMeditation.level);
 
     return {
-      curiosity: activeMeditation.baseCuriosity * multiplier,
-      tenacity: activeMeditation.baseTenacity * multiplier,
-      knowledge: activeMeditation.baseKnowledge * multiplier,
-      qi: activeMeditation.baseQi * multiplier,
+      curiosity: activeMeditation.baseCuriosity * activeMeditation.level * multiplier,
+      tenacity: activeMeditation.baseTenacity * activeMeditation.level * multiplier,
+      knowledge: activeMeditation.baseKnowledge * activeMeditation.level * multiplier,
+      qi: activeMeditation.baseQi * activeMeditation.level * multiplier,
     };
   };
 
   return {
-    gainMeditationExperience,
+    gainMeditationExperience: gainMeditationExperienceTick,
     calculateExpRequired,
     setActiveMeditation,
     levelUpMeditation,

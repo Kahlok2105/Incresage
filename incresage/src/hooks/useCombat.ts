@@ -9,25 +9,32 @@ export function useCombat(
 ) {
 
   const addBodyExp = (amount: number) => {
-    setState(prev => ({
-      ...prev,
-      bodyExp: prev.bodyExp + amount
-    }));
+    setState(prev => {
+      const newBodyExp = prev.bodyExp + amount;
+      const newBodyLevel = newBodyExp > 0
+        ? Math.floor(Math.pow(newBodyExp / 100, 1 / 1.8)) + 1
+        : 1;
+      return { ...prev, bodyExp: newBodyExp, bodyLevel: newBodyLevel };
+    });
   };
 
   const processMonsterVictory = (monster: Monster) => {
     setState(prev => {
       // Get item drops
       const droppedItems = monster.drops.items
-        ? resolveItemDrops(monster.drops.items)
+      ? resolveItemDrops(monster.drops.items)
         : [];
 
-      return {
+        const alreadyDefeated = prev.defeatedMonsters.includes(monster.id);
+        const tpGained = alreadyDefeated ? 0 : (monster.tpReward ?? 0);
+      
+        return {
         ...prev,
         spiritStones: prev.spiritStones + monster.drops.spiritStones,
         defeatedMonsters: [...new Set([...prev.defeatedMonsters, monster.id])],
         inventory: mergeInventoryItems(prev.inventory, droppedItems),
-        unlockedFeatures: [...new Set([...prev.unlockedFeatures, `defeated_${monster.id}`])]
+        unlockedFeatures: [...new Set([...prev.unlockedFeatures, `defeated_${monster.id}`])],
+        tribulationPoints: prev.tribulationPoints + tpGained,
       };
     });
 
