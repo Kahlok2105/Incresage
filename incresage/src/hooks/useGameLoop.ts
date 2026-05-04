@@ -3,7 +3,7 @@ import type { InventoryItem, PlayerState, Monster } from "../types/game";
 import { MONSTERS, MEDITATION_TYPES, BATTLE_TECHNIQUES } from "../constants/gameData";
 import { resolveItemDrops } from "../constants/items";
 import { QI_REALMS, BODY_REALMS, getCurrentRealm } from "../constants/cultivationRealms";
-import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
+import { calculateLifespan, calculateTenacityRequired, calculateTPRequired, calculateBodyExpRequired } from "../utils/gameMath";
 
 /**
  * Core game‑loop hook.
@@ -97,7 +97,12 @@ export function useGameLoop(tickMs: number = 1_000) {
           
           // Ensure battleTechniques exists for migration
           battleTechniques: parsed.battleTechniques || [...BATTLE_TECHNIQUES],
-          inventory: parsed.inventory || []
+          inventory: (parsed.inventory || []).map((item: any) => {
+            if (item.type === 'equipment' || 'slot' in item) {
+              return { ...item, type: 'equipment', isEquipped: item.isEquipped ?? false };
+            }
+            return item;
+          })
         };
       })()
     : {
@@ -461,29 +466,12 @@ export function useGameLoop(tickMs: number = 1_000) {
             totalQiGained
           });
 
-          // Apply the gains to the state
-          setState(prev => {
-            // Calculate meditation experience gains
-            let updatedMeditationTypes = prev.meditationTypes;
-            if (prev.activeMeditationId && statsGained.meditationExp) {
-              updatedMeditationTypes = gainMeditationExperience(prev, statsGained.meditationExp);
-            }
-
-            const { vitalityCap, spiritCap } = calculateStatCaps(prev);
-            
-            return {
-              ...prev,
-              qi: Math.min(prev.qi + statsGained.qi, getCurrentRealm(QI_REALMS, prev.currentQiRealmIndex, prev.currentQiStage).qiCap),
-              curiosity: prev.curiosity + (statsGained.curiosity || 0),
-              tenacity: prev.tenacity + (statsGained.tenacity || 0),
-              knowledge: prev.knowledge + (statsGained.knowledge || 0), // No cap for knowledge yet
-              vitality: Math.min(prev.vitality + (statsGained.vitality || 0), vitalityCap),
-              spirit: Math.min(prev.spirit + (statsGained.spirit || 0), spiritCap),
-              lifespan: Math.min(prev.lifespan + (statsGained.lifespan || 0), prev.maxLifespan),
-              meditationTypes: updatedMeditationTypes,
-              lastUpdate: now
-            };
-          });
+          // DO NOT APPLY GAINS: tick() with deltaTimeSeconds has already handled all time passed
+          // Only update lastUpdate to prevent delta overflow
+          setState(prev => ({
+            ...prev,
+            lastUpdate: now
+          }));
         }
       } else {
         // User is leaving the page, update lastActive timestamp
@@ -512,10 +500,14 @@ export function useGameLoop(tickMs: number = 1_000) {
   const addBodyExp = (amount: number) => {
     setState((prev) => {
       const newBodyExp = prev.bodyExp + amount;
-      // Calculate body level based on EXP (simple formula: level = floor(sqrt(exp/10)) + 1)
-      const newBodyLevel = Math.floor(Math.sqrt(newBodyExp / 10)) + 1;
-      return {
-        ...prev,
+      // Calculate body level from EXP using inverse of: expRequired = 100 * floor(level^1.8)
+      // level = floor((exp / 100)^(1/1.8))
+      let newBodyLevel = 1;
+      if (newBodyExp > 0) {
+        newBodyLevel = Math.floor(Math.pow(newBodyExp / 100, 1 / 1.8)) + 1;
+      }
+      return { 
+        ...prev, 
         bodyExp: newBodyExp,
         bodyLevel: newBodyLevel
       };
@@ -614,7 +606,10 @@ export function useGameLoop(tickMs: number = 1_000) {
         ? prev.defeatedMonsters
         : [...prev.defeatedMonsters, monster.id];
       const newBodyExp = prev.bodyExp + monster.expReward;
-      const newBodyLevel = Math.floor(Math.pow(newBodyExp / 100, 1 / 1.8)) + 1;
+      let newBodyLevel = 1;
+      if (newBodyExp > 0) {
+        newBodyLevel = Math.floor(Math.pow(newBodyExp / 100, 1 / 1.8)) + 1;
+      }
 
       return {
         ...prev,
@@ -674,100 +669,9 @@ export function useGameLoop(tickMs: number = 1_000) {
     });
   };
 
-
-
-  /** Attempt to breakthrough to the next realm.
-   * Returns true if the breakthrough succeeded, false otherwise.
-   */
-// 1. Add a helper to calculate the current chance
-const calculateBreakthroughChance = () => {
-  const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
-  const nextRealm = QI_REALMS[currentIndex + 1];
-  
-  if (!nextRealm) return 0;
-
-  const ratio = Math.min(1, state.qi / nextRealm.qiRequired);
-  return nextRealm.baseSuccessRate * ratio;
-};
-
-
-
-
-const tryBreakthrough = (): { success: boolean; chance: number } => {
-  const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
-  const nextRealm = QI_REALMS[currentIndex + 1];
-  
-  if (!nextRealm) return { success: false, chance: 0 };
-
-  //1. Calculate the dynamic chance based on current Qi progress
-  const chance = calculateBreakthroughChance();
-  const canAttempt = state.qi >= nextRealm.qiRequired / 2;
-
-  if (!canAttempt) return {success: false, chance};
-  
-  //2. Roll the Dice on the breakthrough
-    const roll = Math.random();
-    const success = roll < chance;
-
-    setState((prev) => {
-      if(success) {
-        const newIndex = currentIndex + 1;
-        const newRealmIndex = Math.floor(newIndex / 3);
-        const newStage = newIndex % 3;
-        
-        const newFeatures = [...prev.unlockedFeatures];
-
-         // Progression Logic:
-         if (newRealmIndex >= 1 && !newFeatures.includes("monster")) newFeatures.push("monster");
-         if (newRealmIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
-         if (newRealmIndex >= 3 && !newFeatures.includes("bodyCultivation")) newFeatures.push("bodyCultivation");
-         
-        const newMaxLifespan = calculateLifespan(newIndex);
-        const { vitalityCap, spiritCap } = calculateStatCaps({
-          ...prev,
-          currentQiRealmIndex: newRealmIndex,
-          currentQiStage: newStage,
-        });
-        
-        return {
-          ...prev,
-          currentQiRealmIndex: newRealmIndex,
-          currentQiStage: newStage,
-          qi: 0,
-          vitalityCap,
-          spiritCap,
-          maxLifespan: newMaxLifespan,
-          unlockedFeatures: newFeatures,        
-        };
-       } else {
-         // Penalty: Deduct 50% of current Qi on failure
-         return {
-           ...prev,
-           qi: Math.max(0, prev.qi * 0.5),
-         };
-       }
-    });
-   return { success, chance };
- };
-
-  /** Attempt to breakthrough to the next realm with 100% success chance (debug/cheat).
-   * Returns true if the breakthrough succeeded, false otherwise.
-   */
-  const tryBreakthroughGuaranteed = (): { success: boolean; chance: number } => {
-    const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
-    const nextRealm = QI_REALMS[currentIndex + 1];
-    
-    if (!nextRealm) return { success: false, chance: 0 };
-
-    const chance = calculateBreakthroughChance();
-    const canAttempt = state.qi >= nextRealm.qiRequired / 2;
-
-    if (!canAttempt) return { success: false, chance };
-    
-    // Always succeed with 100% chance
-    const success = true;
-
-    setState((prev) => {
+const applyBreakthrough = (success: boolean, currentIndex: number) => {
+  setState((prev) => {
+    if(success) {
       const newIndex = currentIndex + 1;
       const newRealmIndex = Math.floor(newIndex / 3);
       const newStage = newIndex % 3;
@@ -778,7 +682,7 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
       if (newRealmIndex >= 1 && !newFeatures.includes("monster")) newFeatures.push("monster");
       if (newRealmIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
       if (newRealmIndex >= 3 && !newFeatures.includes("bodyCultivation")) newFeatures.push("bodyCultivation");
-      
+        
       const newMaxLifespan = calculateLifespan(newIndex);
       const { vitalityCap, spiritCap } = calculateStatCaps({
         ...prev,
@@ -796,10 +700,66 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
         maxLifespan: newMaxLifespan,
         unlockedFeatures: newFeatures,        
       };
-    });
-    
-    return { success, chance: 1 };
-  };
+     } else {
+       // Penalty: Deduct 50% of current Qi on failure
+       return {
+         ...prev,
+         qi: Math.max(0, prev.qi * 0.5),
+       };
+     }
+  });
+};
+
+const calculateBreakthroughChance = () => {
+  const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
+  const nextRealm = QI_REALMS[currentIndex + 1];
+  
+  if (!nextRealm) return 0;
+
+  const ratio = Math.min(1, state.qi / nextRealm.qiRequired);
+  return nextRealm.baseSuccessRate * ratio;
+};
+
+const tryBreakthrough = (): { success: boolean; chance: number } => {
+  const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
+  const nextRealm = QI_REALMS[currentIndex + 1];
+  
+  if (!nextRealm) return { success: false, chance: 0 };
+
+  const chance = calculateBreakthroughChance();
+  const canAttempt = state.qi >= nextRealm.qiRequired / 2;
+
+  if (!canAttempt) return {success: false, chance};
+  
+  const roll = Math.random();
+  const success = roll < chance;
+
+  applyBreakthrough(success, currentIndex);
+
+  return { success, chance };
+};
+
+/** Attempt to breakthrough to the next realm with 100% success chance (debug/cheat).
+ * Returns true if the breakthrough succeeded, false otherwise.
+ */
+const tryBreakthroughGuaranteed = (): { success: boolean; chance: number } => {
+  const currentIndex = state.currentQiRealmIndex * 3 + state.currentQiStage;
+  const nextRealm = QI_REALMS[currentIndex + 1];
+  
+  if (!nextRealm) return { success: false, chance: 0 };
+
+  const chance = calculateBreakthroughChance();
+  const canAttempt = state.qi >= nextRealm.qiRequired / 2;
+
+  if (!canAttempt) return { success: false, chance };
+  
+  // Always succeed with 100% chance
+  const success = true;
+
+  applyBreakthrough(success, currentIndex);
+  
+  return { success, chance: 1 };
+};
 
   /** Add a percentage of total Qi for testing purposes */
   const addTestQi = (percentage: number) => {
@@ -813,27 +773,9 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     });
   };
 
-  /** Add tribulation points from defeating a monster (one-time per monster type) */
-  const addTribulationPoints = (monster: Monster) => {
-    setState((prev) => {
-      // Check if monster has already been defeated
-      const defeatedMonsters = prev.defeatedMonsters ?? [] ;
-      if (defeatedMonsters.includes(monster.id)) {
-        return prev; // Already defeated, no TP gain
-      }
-
-      const tpGained = monster.tpReward || 0;
-      return {
-        ...prev,
-        tribulationPoints: prev.tribulationPoints + tpGained,
-        defeatedMonsters: [...defeatedMonsters, monster.id]
-      };
-    });
-  };
-
   /** Calculate body stage index (0-17) */
   const getBodyStageIndex = () => {
-    return state.currentBodyRealmIndex * 3 + state.currentBodyStage;
+    return state.currentBodyRealmIndex * 3 + state.currentQiStage;
   };
 
   /** Calculate body breakthrough chance */
@@ -914,30 +856,10 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     return { success, chance };
   };
 
-  /** Add body experience with new formula */
-  const addBodyExpNew = (amount: number) => {
-    setState((prev) => {
-      const newBodyExp = prev.bodyExp + amount;
-      // Calculate body level from EXP using inverse of: expRequired = 100 * floor(level^1.8)
-      // level = floor((exp / 100)^(1/1.8))
-      let newBodyLevel = 1;
-      if (newBodyExp > 0) {
-        newBodyLevel = Math.floor(Math.pow(newBodyExp / 100, 1 / 1.8)) + 1;
-      }
-      return { 
-        ...prev, 
-        bodyExp: newBodyExp,
-        bodyLevel: newBodyLevel
-      };
-    });
-  };
-
   return {
     state,
     addSpiritStones,
     addBodyExp,
-    addBodyExpNew,
-    addTribulationPoints,
     addInventoryItems,
     useInventoryItem,
     toggleEquipItem,
@@ -971,6 +893,3 @@ const tryBreakthrough = (): { success: boolean; chance: number } => {
     clearWelcomeData: () => setWelcomeData(null)
   };
 }
-
-
-
