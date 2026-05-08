@@ -6,14 +6,34 @@ import { calculateQiCap, calculateQiRequired } from "../utils/gameMath";
  * 5 realms × 3 stages each (Early, Middle, Late)
  */
 export const QI_REALMS: CultivationRealm[] = [
-  // Mortal (Realm 0)
+  // Mortal (Realm 0) — 3 stages for consistent indexing
   {
-    id: "qi_mortal",
+    id: "qi_mortal_early",
     name: "Mortal",
     stage: 0,
-    displayName: "Mortal",
+    displayName: "Mortal (Early)",
     qiRequired: 0,
-    qiCap: 1000,
+    qiCap: calculateQiCap(0, 0),
+    gainMultiplier: 1,
+    baseSuccessRate: 0.9
+  },
+  {
+    id: "qi_mortal_middle",
+    name: "Mortal",
+    stage: 1,
+    displayName: "Mortal (Middle)",
+    qiRequired: 0,
+    qiCap: calculateQiCap(0, 0),
+    gainMultiplier: 1,
+    baseSuccessRate: 0.9
+  },
+  {
+    id: "qi_mortal_late",
+    name: "Mortal",
+    stage: 2,
+    displayName: "Mortal (Late)",
+    qiRequired: 0,
+    qiCap: calculateQiCap(0, 0),
     gainMultiplier: 1,
     baseSuccessRate: 0.9
   },
@@ -179,14 +199,34 @@ export const QI_REALMS: CultivationRealm[] = [
  * 5 realms × 3 stages each (Early, Middle, Late)
  */
 export const BODY_REALMS: CultivationRealm[] = [
-  // Mortal (Realm 0)
+  // Mortal (Realm 0) — 3 stages for consistent indexing
   {
-    id: "body_mortal",
+    id: "body_mortal_early",
     name: "Mortal",
     stage: 0,
-    displayName: "Mortal",
+    displayName: "Mortal (Early)",
     qiRequired: 0,
-    qiCap: 1000,
+    qiCap: calculateQiCap(0, 0),
+    gainMultiplier: 1,
+    baseSuccessRate: 0.9
+  },
+  {
+    id: "body_mortal_middle",
+    name: "Mortal",
+    stage: 1,
+    displayName: "Mortal (Middle)",
+    qiRequired: 0,
+    qiCap: calculateQiCap(0, 0),
+    gainMultiplier: 1,
+    baseSuccessRate: 0.9
+  },
+  {
+    id: "body_mortal_late",
+    name: "Mortal",
+    stage: 2,
+    displayName: "Mortal (Late)",
+    qiRequired: 0,
+    qiCap: calculateQiCap(0, 0),
     gainMultiplier: 1,
     baseSuccessRate: 0.9
   },

@@ -19,8 +19,8 @@ export const calculateStatCaps = (state: PlayerState) => {
   const qiMultiplier = state.currentQiRealmIndex + 1;
   const bodyMultiplier = state.currentBodyRealmIndex + 1;
 
-  // ✅ Vitality formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(Tenacity)
-  const vitalityCap = (BASE_VITALITY * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.tenacity));
+  // ✅ Vitality formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(totalTenacityEarned)
+  const vitalityCap = (BASE_VITALITY * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.totalTenacityEarned));
 
   // ✅ Spirit formula: (base * qiRealmIndex * BodyRealmIndex) + sqrt(Knowledge)
   const spiritCap = (BASE_SPIRIT * qiMultiplier * bodyMultiplier) + Math.sqrt(Math.max(0, state.knowledge));
@@ -50,10 +50,10 @@ export const getActiveMeditationStats = (currentState: PlayerState) => {
   const multiplier = calculateMeditationMultiplier(activeMeditation.level);
 
   return {
-    curiosity: activeMeditation.baseCuriosity * multiplier,
-    tenacity: activeMeditation.baseTenacity * multiplier,
-    knowledge: activeMeditation.baseKnowledge * multiplier,
-    qi: activeMeditation.baseQi * multiplier,
+    curiosity: activeMeditation.baseCuriosity * activeMeditation.level * multiplier,
+    tenacity: activeMeditation.baseTenacity * activeMeditation.level * multiplier,
+    knowledge: activeMeditation.baseKnowledge * activeMeditation.level * multiplier,
+    qi: activeMeditation.baseQi * activeMeditation.level * multiplier,
   };
 };
 
@@ -61,7 +61,7 @@ export const getActiveMeditationStats = (currentState: PlayerState) => {
  * Calculate bonus value for a single battle technique
  */
 export const calculateBattleBonus = (technique: BattleTechnique) => {
-  return Math.floor(technique.baseValue * (1 + (technique.level * 0.5)));
+  return Math.floor(technique.baseValue * Math.pow(technique.level, 1.5));
 };
 
 /**
@@ -81,5 +81,5 @@ export const getBattleBonuses = (state: PlayerState) => {
  * Calculate upgrade cost for battle technique
  */
 export const calculateBattleUpgradeCost = (technique: BattleTechnique) => {
-  return Math.floor(100 * Math.pow(1.5, technique.level));
+  return Math.floor(technique.baseValue * Math.pow(1.15, technique.level));
 };

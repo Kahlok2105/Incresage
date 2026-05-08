@@ -1,5 +1,5 @@
 import type { PlayerState } from "../types/game";
-import { calculateLifespan } from "../utils/gameMath";
+import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
 import { QI_REALMS, BODY_REALMS } from "../constants/cultivationRealms";
 import { calculateStatCaps } from "../utils/statCalc";
 
@@ -17,10 +17,25 @@ export function useBreakthrough(
   };
 
   const calculateBodyBreakthroughChance = (): number => {
-    const currentRealm = BODY_REALMS[state.currentBodyRealmIndex];
+    const bodyStageIndex = state.currentBodyRealmIndex * 3 + state.currentBodyStage;
+    const currentRealm = BODY_REALMS[bodyStageIndex];
     const baseChance = currentRealm.baseSuccessRate;
-    const tenacityBonus = Math.min(0.5, state.tenacity / 1000);
-    return Math.min(0.95, baseChance + tenacityBonus);
+
+    // Tenacity ratio: min(1, currentTenacity / tenacityRequired)
+    const tenacityRequired = calculateTenacityRequired(bodyStageIndex);
+    const tenacityRatio = Math.min(1, state.tenacity / Math.max(1, tenacityRequired));
+
+    // TP ratio: min(1, tribulationPoints / tpRequired)
+    const tpRequired = calculateTPRequired(bodyStageIndex);
+    const tpRatio = Math.min(1, state.tribulationPoints / Math.max(1, tpRequired));
+
+    // Body level ratio: min(1.5, bodyLevel / requiredBodyLevel)
+    const requiredBodyLevel = bodyStageIndex + 1;
+    const levelRatio = Math.min(1.5, state.bodyLevel / Math.max(1, requiredBodyLevel));
+
+    // Multiplicative chance formula from game_design
+    const chance = baseChance * tenacityRatio * tpRatio * levelRatio;
+    return Math.min(1, chance);
   };
 
   const getBodyStageIndex = () => {
@@ -95,34 +110,69 @@ export function useBreakthrough(
   };
 
   const tryBodyBreakthrough = () => {
+    const bodyStageIndex = state.currentBodyRealmIndex * 3 + state.currentBodyStage;
+    const nextBodyIndex = bodyStageIndex + 1;
+    const nextRealm = BODY_REALMS[nextBodyIndex];
+
+    // Check if max realm reached
+    if (!nextRealm) return false;
+
+    // Check minimum requirements (50% of each resource)
+    const tenacityRequired = calculateTenacityRequired(bodyStageIndex);
+    const tpRequired = calculateTPRequired(bodyStageIndex);
+    const requiredBodyLevel = bodyStageIndex + 1;
+
+    const hasEnoughTenacity = state.tenacity >= tenacityRequired * 0.5;
+    const hasEnoughTP = state.tribulationPoints >= tpRequired * 0.5;
+    const hasEnoughLevel = state.bodyLevel >= requiredBodyLevel * 0.5;
+
+    if (!hasEnoughTenacity || !hasEnoughTP || !hasEnoughLevel) return false;
+
     const successChance = calculateBodyBreakthroughChance();
     const roll = Math.random();
 
     if (roll < successChance) {
       setState(prev => {
-        const nextStage = prev.currentBodyStage + 1;
-        const nextRealmIndex = Math.floor(nextStage / 9);
+        const newBodyIndex = prev.currentBodyRealmIndex * 3 + prev.currentBodyStage + 1;
+        const newRealm = BODY_REALMS[newBodyIndex];
+        if (!newRealm) return prev;
+
+        const newRealmIndex = Math.floor(newBodyIndex / 3);
+        const newStage = newBodyIndex % 3;
+
         const { vitalityCap, spiritCap } = calculateStatCaps({
           ...prev,
-          currentBodyRealmIndex: nextRealmIndex
+          currentBodyRealmIndex: newRealmIndex,
         });
 
         return {
           ...prev,
-          currentBodyStage: nextStage,
-          currentBodyRealmIndex: nextRealmIndex,
+          currentBodyStage: newStage,
+          currentBodyRealmIndex: newRealmIndex,
           bodyExp: 0,
           vitalityCap,
           spiritCap,
-          unlockedFeatures: [...new Set([...prev.unlockedFeatures, `body_stage_${nextStage}`])]
         };
       });
       return true;
     } else {
-      setState(prev => ({
-        ...prev,
-        bodyExp: Math.floor(prev.bodyExp * 0.8)
-      }));
+      setState(prev => {
+        const reducedTenacity = Math.max(0, prev.tenacity * 0.7);
+        const reducedBodyLevel = Math.max(1, prev.bodyLevel - 1);
+
+        const { vitalityCap, spiritCap } = calculateStatCaps({
+          ...prev,
+          tenacity: reducedTenacity,
+        });
+
+        return {
+          ...prev,
+          tenacity: reducedTenacity,
+          bodyLevel: reducedBodyLevel,
+          vitalityCap,
+          spiritCap,
+        };
+      });
       return false;
     }
   };

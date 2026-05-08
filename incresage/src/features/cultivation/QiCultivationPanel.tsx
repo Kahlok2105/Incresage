@@ -19,13 +19,14 @@ export const QiCultivationPanel: React.FC<{
   const nextRealm = QI_REALMS[currentRealmIndex * 3 + currentStage + 1];
   
   const qiRequired = nextRealm ? nextRealm.qiRequired : 0;
+  const qiRatio = nextRealm ? Math.min(1, usableQi / qiRequired) : 0;
   const currentChance = nextRealm
-    ? Math.min(100, (usableQi / qiRequired) * 100).toFixed(1)
+    ? (nextRealm.baseSuccessRate * qiRatio * 100).toFixed(1)
     : "0.0";
 
   const canAttempt = nextRealm && usableQi >= qiRequired * 0.5;
 
-  const qiPercent = (usableQi / totalQi * 100).toFixed(1);
+  const qiPercent = Math.min(100, (usableQi / totalQi * 100)).toFixed(1);
 
   const attemptLabel = nextRealm
     ? canAttempt

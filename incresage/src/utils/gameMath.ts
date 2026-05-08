@@ -76,10 +76,10 @@ export const calculateQiCap = (realmIndex: number, stage: number = 0): number =>
   const BASE = 100;
   const MULTIPLIER = 3;
   
-  if (realmIndex <= 0) return 1000;
-  
-  const exponent = Math.pow(realmIndex, 1.8) + stage;
-  const rawCap = BASE * Math.pow(MULTIPLIER, exponent);
+  // Smooth exponential curve: each of the 18 stages has a unique, increasing cap
+  // totalStageIndex ranges from 0 (Mortal Early) to 17 (Spirit Severing Late)
+  const totalStageIndex = realmIndex * 3 + stage;
+  const rawCap = BASE * Math.pow(MULTIPLIER, totalStageIndex / 2);
   
   return getCleanNumber(rawCap);
 };
@@ -124,4 +124,9 @@ export const calculateMonsterExp = (difficulty: number): number => {
  */
 export const calculateMonsterTP = (difficulty: number): number => {
   return Math.floor(Math.pow(difficulty, 1.5));
+};
+
+/// Clamp a number between a min and max value
+export const clamp = (value: number, min: number, max: number): number => {
+  return Math.max(min, Math.min(value, max));
 };

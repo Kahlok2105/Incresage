@@ -18,14 +18,14 @@ export const CombatView: React.FC<CombatViewProps> = ({
   onFlee,
   onBack
 }) => {
-  // Calculate HP percentages for bars
+  // Calculate HP percentages for bars (capped at 100 to prevent overflow)
   const getPlayerHPPercent = () => {
-    return (combatState.playerHP / playerVitalityCap) * 100;
+    return Math.min(100, (combatState.playerHP / playerVitalityCap) * 100);
   };
 
   const getMonsterHPPercent = () => {
     if (!combatState.monster) return 0;
-    return (combatState.monsterHP / combatState.monster.hp) * 100;
+    return Math.min(100, (combatState.monsterHP / combatState.monster.hp) * 100);
   };
 
   return (

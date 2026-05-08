@@ -28,7 +28,8 @@ export function useGameTick(
     const deltaTimeSeconds = (now - prev.lastUpdate) / 1000;
 
     // 1. Realm Qi gain — multiplied by 2 if meditation toggle is on
-    const qiRealm = QI_REALMS[prev.currentQiRealmIndex];
+    const qiTotalIndex = prev.currentQiRealmIndex * 3 + prev.currentQiStage;
+    const qiRealm = QI_REALMS[Math.min(qiTotalIndex, QI_REALMS.length - 1)];
     const baseQiGain = qiRealm.gainMultiplier * (isMeditatingRef.current ? 2 : 1);
     const realmQiGain = baseQiGain * deltaTimeSeconds;
 
@@ -64,6 +65,7 @@ export function useGameTick(
       qi: Math.min(prev.qi + realmQiGain + meditationQiGain, qiRealm.qiCap),
       curiosity: prev.curiosity + curiosityGain,
       tenacity: newTenacity,
+      totalTenacityEarned: (prev.totalTenacityEarned || 0) + tenacityGain,
       knowledge: newKnowledge,
       vitality: Math.min(prev.vitality + vitalityRegen, vitalityCap),
       spirit: Math.min(prev.spirit + spiritRegen, spiritCap),

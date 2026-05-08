@@ -29,6 +29,7 @@ export const DEFAULT_STATE: PlayerState = {
 
   curiosity: 0,
   tenacity: 0,
+  totalTenacityEarned: 0,
 
   lifespan: 0,
   maxLifespan: 100,
@@ -54,6 +55,7 @@ export function useGameState() {
 
         // Migrate old vitality field to tenacity for backward compatibility
         const migratedTenacity = parsed.tenacity || parsed.vitality || 0;
+        const migratedTotalTenacity = parsed.totalTenacityEarned ?? migratedTenacity;
 
         // Migrate old single realm system to new dual cultivation system
         const oldRealmIndex = parsed.currentRealmIndex || 0;
@@ -73,6 +75,7 @@ export function useGameState() {
 
           vitality: parsed.vitality || 0,
           tenacity: migratedTenacity,
+          totalTenacityEarned: migratedTotalTenacity,
 
           // Calculate proper stat caps
           ...calculateStatCaps({
@@ -117,6 +120,7 @@ export function useGameState() {
 
         curiosity: 0,
         tenacity: 0,
+        totalTenacityEarned: 0,
 
         lifespan: 0,
         maxLifespan: 100,

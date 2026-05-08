@@ -64,6 +64,7 @@ export interface PlayerState {
   knowledge: number;
   curiosity: number;
   tenacity: number;
+  totalTenacityEarned: number;
   lifespan: number;
   maxLifespan: number;
   unlockedFeatures: string[];

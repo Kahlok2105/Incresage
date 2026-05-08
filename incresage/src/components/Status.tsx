@@ -52,7 +52,9 @@ export const Status: React.FC<{
       : "Accumulate More Qi"
     : "No Further Realms";
 
-  // Calculate HP/MP bar percentages
+  // Calculate HP/MP bar percentages with displayed cap
+  const displayedVitality = Math.min(state.vitality || 0, state.vitalityCap || 0);
+  const displayedSpirit = Math.min(state.spirit || 0, state.spiritCap || 0);
   const vitalityPercent = Math.min(100, Math.max(0, ((state.vitality || 0) / state.vitalityCap) * 100));
   const spiritPercent = Math.min(100, Math.max(0, ((state.spirit || 0) / (state as any).spiritCap) * 100));
 
@@ -68,7 +70,7 @@ export const Status: React.FC<{
       <div className="stat-bar-container hp-bar">
         <div className="stat-bar-label">
           <span>❤️ Vitality</span>
-          <span>{(state.vitality || 0).toFixed(0)} / {(state.vitalityCap || 0).toFixed(0)}</span>
+        <span>{displayedVitality.toFixed(0)} / {(state.vitalityCap || 0).toFixed(0)}</span>
         </div>
         <div className="stat-bar">
           <div className="stat-bar-fill" style={{ width: `${vitalityPercent}%` }} />
@@ -79,7 +81,7 @@ export const Status: React.FC<{
       <div className="stat-bar-container mp-bar">
         <div className="stat-bar-label">
           <span>💎 Spirit</span>
-          <span>{(state.spirit || 0).toFixed(0)} / {(state.spiritCap || 0).toFixed(0)}</span>
+          <span>{displayedSpirit.toFixed(0)} / {(state.spiritCap || 0).toFixed(0)}</span>
         </div>
         <div className="stat-bar">
           <div className="stat-bar-fill" style={{ width: `${spiritPercent}%` }} />

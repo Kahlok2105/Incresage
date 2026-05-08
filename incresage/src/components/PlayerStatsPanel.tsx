@@ -30,8 +30,12 @@ export const PlayerStatsPanel: React.FC<{
   maxLifespan,
   spiritStones,
 }) => {
-  const vitalityPercent = (vitality / vitalityCap * 100).toFixed(1);
-  const spiritPercent = (spirit / spiritCap * 100).toFixed(1);
+
+const displayedVitality = Math.min(vitality, vitalityCap);
+const displayedSpirit = Math.min(spirit, spiritCap);
+
+const vitalityPercent = (displayedVitality / vitalityCap * 100).toFixed(1);
+const spiritPercent = (displayedSpirit / spiritCap * 100).toFixed(1);
 
   return (
     <div className="player-stats-panel" style={{ 
@@ -50,7 +54,7 @@ export const PlayerStatsPanel: React.FC<{
       <div style={{ marginBottom: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '0.9rem', minHeight: '18px' }}>
           <span style={{ fontWeight: 'bold' }}>Vitality</span>
-          <span>{vitality.toFixed(0)} / {vitalityCap.toFixed(0)}</span>
+          <span>{displayedVitality.toFixed(0)} / {vitalityCap.toFixed(0)}</span>
         </div>
         <div style={{ width: '100%', height: '6px', background: '#3a2a1a', borderRadius: '3px' }}>
           <div style={{ width: `${vitalityPercent}%`, height: '100%', background: '#50c878', borderRadius: '3px' }} />
@@ -61,7 +65,7 @@ export const PlayerStatsPanel: React.FC<{
       <div style={{ marginBottom: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px', fontSize: '0.9rem', minHeight: '18px' }}>
           <span style={{ fontWeight: 'bold' }}>Spirit</span>
-          <span>{spirit.toFixed(0)} / {spiritCap.toFixed(0)}</span>
+          <span>{displayedSpirit.toFixed(0)} / {spiritCap.toFixed(0)}</span>
         </div>
         <div style={{ width: '100%', height: '6px', background: '#3a2a1a', borderRadius: '3px' }}>
           <div style={{ width: `${spiritPercent}%`, height: '100%', background: '#4a90d9', borderRadius: '3px' }} />

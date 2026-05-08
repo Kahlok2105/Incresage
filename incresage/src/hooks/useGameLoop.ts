@@ -39,12 +39,12 @@ export function useGameLoop(tickMs: number = 1_000) {
   };
 
   // Compose and return full game API
-  type WelcomeData = {
-    showModal: boolean;
-    secondsAway: number;
-    totalQiGained: number;
-    statsGained: Record<string, number>;
-  };
+  // type WelcomeData = {
+  //   showModal: boolean;
+  //   secondsAway: number;
+  //   totalQiGained: number;
+  //   statsGained: Record<string, number>;
+  // };
 
   const battleBonuses = getBattleBonuses(state);
 

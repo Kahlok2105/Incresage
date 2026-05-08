@@ -40,7 +40,8 @@ export const BodyCultivationPanel: React.FC<{
 
   const canAttempt = nextBodyRealm && 
                      tenacity >= tenacityRequired * 0.5 && 
-                     tribulationPoints >= tpRequired * 0.5;
+                     tribulationPoints >= tpRequired * 0.5 &&
+                     bodyLevel >= requiredBodyLevel * 0.5;
 
   const tenacityRatio = (tenacity / tenacityRequired * 100).toFixed(1);
   const tpRatio = (tribulationPoints / tpRequired * 100).toFixed(1);
