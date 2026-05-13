@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { Monster } from "../../types/combat";
 import type { CombatState } from "../../types/combat";
 import { MonsterList } from "./MonsterList";
@@ -31,6 +31,15 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
   });
 
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
+  const [repeatCountdown, setRepeatCountdown] = useState<number>(0);
+  const repeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear repeat timer on unmount
+  useEffect(() => {
+    return () => {
+      if (repeatTimerRef.current) clearTimeout(repeatTimerRef.current);
+    };
+  }, []);
 
   //1. Start combat with a specific monster
   const startCombat = (monster: Monster) => {
@@ -38,12 +47,34 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       setCombatState({
         isActive: true,
         monster,
-        playerHP: Math.floor(playerVitality), // Initialize from prop
-        monsterHP: monster.hp,    // Initialize from monster data
+        playerHP: Math.floor(playerVitality),
+        monsterHP: monster.hp,
         log: [`A wild Tier ${monster.difficulty} ${monster.name} appears!`],
         isPlayerTurn: true
       });
+      setRepeatCountdown(0);
     };
+
+  // Auto-repeat combat after 2-second delay
+  const scheduleRepeat = (monster: Monster) => {
+    setRepeatCountdown(2);
+    repeatTimerRef.current = setInterval(() => {
+      setRepeatCountdown(prev => {
+        if (prev <= 1) {
+          if (repeatTimerRef.current) clearInterval(repeatTimerRef.current);
+          repeatTimerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    setTimeout(() => {
+      repeatTimerRef.current = null;
+      setRepeatCountdown(0);
+      startCombat(monster);
+    }, 2000);
+  };
 
   //2. Player attacks the monster
 
@@ -73,6 +104,11 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
           ? "Loot has been added to your inventory."
           : "No item drops were found.";
 
+        // Schedule auto-repeat after victory
+        setTimeout(() => {
+          scheduleRepeat(monster);
+        }, 500);
+
         return {
           ...prev,
           monsterHP: 0,
@@ -89,7 +125,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       return {
         ...prev,
         monsterHP: newMonsterHP,
-        isPlayerTurn: false, // Switch turn to disable button
+        isPlayerTurn: false,
         log: newLog
       };
     });
@@ -119,7 +155,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       return {
         ...prev,
         playerHP: newPlayerHP,
-        isPlayerTurn: true, // Re-enable player button
+        isPlayerTurn: true,
         log: newLog
       };
     });
@@ -147,6 +183,13 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
 
   // Flee from combat
   const fleeCombat = () => {
+    // Cancel any pending repeat
+    if (repeatTimerRef.current) {
+      clearInterval(repeatTimerRef.current);
+      repeatTimerRef.current = null;
+    }
+    setRepeatCountdown(0);
+
     setCombatState({
       ...combatState,
       log: [...combatState.log, "You fled from the battle!"],
@@ -159,6 +202,13 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
 
   // Go back to monster list
   const goBackToList = () => {
+    // Cancel any pending repeat
+    if (repeatTimerRef.current) {
+      clearInterval(repeatTimerRef.current);
+      repeatTimerRef.current = null;
+    }
+    setRepeatCountdown(0);
+
     setSelectedMonster(null);
       setCombatState({
         isActive: false,
@@ -184,6 +234,7 @@ export const CombatSystem: React.FC<CombatSystemProps> = ({
       playerVitalityCap={playerVitalityCap}
       onFlee={fleeCombat}
       onBack={goBackToList}
+      repeatCountdown={repeatCountdown}
     />
   );
 };

@@ -3,6 +3,7 @@ import type { PlayerState } from "../types/game";
 import { QI_REALMS } from "../constants/cultivationRealms";
 import { calculateStatCaps, getActiveMeditationStats } from "../utils/statCalc";
 import { gainMeditationExperience } from "./useMeditation";
+import { processReincarnation } from "./useReincarnation";
 
 export function useGameTick(
   state: PlayerState,
@@ -13,7 +14,6 @@ export function useGameTick(
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMeditatingRef = useRef(isMeditating);
 
-
   
   // Keep ref in sync
   useEffect(() => {
@@ -21,8 +21,6 @@ export function useGameTick(
   }, [isMeditating]);
 
   const tick = () => {
-    
-
     setState(prev => {
     const now = Date.now();
     const deltaTimeSeconds = (now - prev.lastUpdate) / 1000;
@@ -60,6 +58,14 @@ export function useGameTick(
     // 6. Meditation experience
     const updatedMeditationTypes = gainMeditationExperience(prev, deltaTimeSeconds);
 
+    const newLifespan = Math.min(prev.lifespan + lifespanGain, prev.maxLifespan);
+
+    // 7. Check for reincarnation: lifespan reached maxLifespan
+    if (newLifespan >= prev.maxLifespan && prev.lifespan < prev.maxLifespan) {
+      // Lifespan just hit the cap - trigger reincarnation
+      return processReincarnation(prev);
+    }
+
     return {
       ...prev,
       qi: Math.min(prev.qi + realmQiGain + meditationQiGain, qiRealm.qiCap),
@@ -71,7 +77,7 @@ export function useGameTick(
       spirit: Math.min(prev.spirit + spiritRegen, spiritCap),
       vitalityCap,
       spiritCap,
-      lifespan: Math.min(prev.lifespan + lifespanGain, prev.maxLifespan),
+      lifespan: newLifespan,
       meditationTypes: updatedMeditationTypes,
       lastUpdate: now,
     };
@@ -96,23 +102,92 @@ export function useGameTick(
     totalQiGained: number;
   } | null>(null);
 
+  // Snapshot of stats when the player leaves, used to compute gains on return
+  const awaySnapshotRef = useRef<Record<string, number> | null>(null);
+
+  // Process offline gains when the player returns, using the same logic as the tick
+  const processOfflineGains = (secondsAway: number, prev: PlayerState) => {
+    const qiTotalIndex = prev.currentQiRealmIndex * 3 + prev.currentQiStage;
+    const qiRealm = QI_REALMS[Math.min(qiTotalIndex, QI_REALMS.length - 1)];
+    const baseQiGain = qiRealm.gainMultiplier * (isMeditatingRef.current ? 2 : 1);
+    const realmQiGain = baseQiGain * secondsAway;
+
+    const meditationStats = getActiveMeditationStats(prev);
+    const meditationQiGain = meditationStats.qi * secondsAway;
+    const curiosityGain = meditationStats.curiosity * secondsAway;
+    const tenacityGain = meditationStats.tenacity * secondsAway;
+    const knowledgeGain = meditationStats.knowledge * secondsAway;
+
+    const newTenacity = prev.tenacity + tenacityGain;
+    const newKnowledge = prev.knowledge + knowledgeGain;
+    const { vitalityCap, spiritCap } = calculateStatCaps({
+      ...prev,
+      tenacity: newTenacity,
+      knowledge: newKnowledge,
+    });
+
+    const vitalityRegen = Math.ceil(vitalityCap * 0.005) * secondsAway;
+    const spiritRegen = Math.ceil(spiritCap * 0.005) * secondsAway;
+
+    const isActive = isMeditatingRef.current || prev.activeMeditationId !== null;
+    const lifespanGain = isActive ? 0.1 * secondsAway : 0;
+
+    const totalQiGained = realmQiGain + meditationQiGain;
+
+    return {
+      qi: Math.min(prev.qi + totalQiGained, qiRealm.qiCap),
+      curiosity: prev.curiosity + curiosityGain,
+      tenacity: newTenacity,
+      totalTenacityEarned: (prev.totalTenacityEarned || 0) + tenacityGain,
+      knowledge: newKnowledge,
+      vitality: Math.min(prev.vitality + vitalityRegen, vitalityCap),
+      spirit: Math.min(prev.spirit + spiritRegen, spiritCap),
+      vitalityCap,
+      spiritCap,
+      lifespan: Math.min(prev.lifespan + lifespanGain, prev.maxLifespan),
+      statsGained: {
+        curiosity: curiosityGain,
+        tenacity: tenacityGain,
+        knowledge: knowledgeGain,
+        vitality: vitalityRegen,
+        spirit: spiritRegen,
+        lifespan: lifespanGain,
+      } as Record<string, number>,
+      totalQiGained,
+    };
+  };
+
   // Page visibility handler
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Reset lastUpdate so the next tick doesn't produce a massive delta spike
         const now = Date.now();
-        const secondsAway = (now - state.lastActive) / 1000;  // ← must be here, before the if
+        const secondsAway = (now - state.lastActive) / 1000;
 
-          if (secondsAway > 60) {
+        if (secondsAway > 60) {
+          // Process offline gains synchronously and show the modal
+          setState(prev => {
+            const { statsGained, totalQiGained, ...updatedFields } = processOfflineGains(secondsAway, prev);
+
+            // Show modal with actual gain data
             setWelcomeData({
               showModal: true,
               secondsAway,
-              statsGained: {},
-              totalQiGained: 0,
+              statsGained,
+              totalQiGained,
             });
-          }
-        setState(prev => ({ ...prev, lastUpdate: Date.now() }));
+
+            return {
+              ...prev,
+              ...updatedFields,
+              lastUpdate: now,
+            };
+          });
+        } else {
+          setState(prev => ({ ...prev, lastUpdate: now }));
+        }
+
+        awaySnapshotRef.current = null;
         
       } else {
         // Stamp when the player left so we can show how long they were away
@@ -121,7 +196,7 @@ export function useGameTick(
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
+  }, [state.lastActive]);
 
 
 

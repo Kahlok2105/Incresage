@@ -2,6 +2,10 @@ import type { PlayerState } from "../types/game";
 import { calculateLifespan, calculateTenacityRequired, calculateTPRequired } from "../utils/gameMath";
 import { QI_REALMS, BODY_REALMS } from "../constants/cultivationRealms";
 import { calculateStatCaps } from "../utils/statCalc";
+import {
+  calculateRighteousKarmaFromQiBreakthrough,
+  calculateDemonicKarmaFromBodyBreakthrough,
+} from "./useReincarnation";
 
 export function useBreakthrough(
   state: PlayerState,
@@ -62,6 +66,10 @@ export function useBreakthrough(
     if (newRealmIndex >= 2 && !newFeatures.includes("alchemy")) newFeatures.push("alchemy");
     if (newRealmIndex >= 3 && !newFeatures.includes("bodyCultivation")) newFeatures.push("bodyCultivation");
 
+    // Righteous karma from Qi breakthrough
+    const realmTier = newRealmIndex;
+    const righteousKarmaGained = calculateRighteousKarmaFromQiBreakthrough(realmTier);
+
     return {
       ...prev,
       currentQiRealmIndex: newRealmIndex,
@@ -71,6 +79,12 @@ export function useBreakthrough(
       spiritCap,
       maxLifespan: calculateLifespan(newIndex),
       unlockedFeatures: newFeatures,
+      righteousKarma: prev.righteousKarma + righteousKarmaGained,
+      lifetimeStats: {
+        ...prev.lifetimeStats,
+        highestQiRealm: Math.max(prev.lifetimeStats.highestQiRealm, newRealmIndex),
+        totalQiBreakthroughs: prev.lifetimeStats.totalQiBreakthroughs + 1,
+      },
     };
   });
 };
@@ -145,6 +159,9 @@ export function useBreakthrough(
           currentBodyRealmIndex: newRealmIndex,
         });
 
+        // Demonic karma from body breakthrough
+        const demonicKarmaGained = calculateDemonicKarmaFromBodyBreakthrough(newRealmIndex);
+
         return {
           ...prev,
           currentBodyStage: newStage,
@@ -152,6 +169,12 @@ export function useBreakthrough(
           bodyExp: 0,
           vitalityCap,
           spiritCap,
+          demonicKarma: prev.demonicKarma + demonicKarmaGained,
+          lifetimeStats: {
+            ...prev.lifetimeStats,
+            highestBodyRealm: Math.max(prev.lifetimeStats.highestBodyRealm, newRealmIndex),
+            totalBodyBreakthroughs: prev.lifetimeStats.totalBodyBreakthroughs + 1,
+          },
         };
       });
       return true;

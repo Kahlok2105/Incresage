@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { PlayerState } from "../types/game";
 import { MEDITATION_TYPES } from "../constants/meditations";
 import { BATTLE_TECHNIQUES } from "../constants/techniques";
-import { QI_REALMS } from "../constants/cultivationRealms";
 import { calculateLifespan } from "../utils/gameMath";
 import { calculateStatCaps } from "../utils/statCalc";
 
@@ -42,7 +41,24 @@ export const DEFAULT_STATE: PlayerState = {
   bodyLevel: 1,
   tribulationPoints: 0,
   defeatedMonsters: [],
-  inventory: []
+  inventory: [],
+
+  // Reincarnation system defaults
+  righteousKarma: 0,
+  demonicKarma: 0,
+  memories: 0,
+  reincarnationCount: 0,
+  showReincarnationModal: false,
+  reincarnationSummary: null,
+  lifetimeStats: {
+    totalLifespanLived: 0,
+    highestQiRealm: 0,
+    highestBodyRealm: 0,
+    totalMonstersDefeated: 0,
+    totalQiBreakthroughs: 0,
+    totalBodyBreakthroughs: 0,
+  },
+  monsterKarmaEarned: {},
 };
 
 export function useGameState() {
@@ -96,45 +112,27 @@ export function useGameState() {
               return { ...item, type: 'equipment', isEquipped: item.isEquipped ?? false };
             }
             return item;
-          })
+          }),
+
+          // Reincarnation system defaults for migration
+          righteousKarma: parsed.righteousKarma ?? 0,
+          demonicKarma: parsed.demonicKarma ?? 0,
+          memories: parsed.memories ?? 0,
+          reincarnationCount: parsed.reincarnationCount ?? 0,
+          showReincarnationModal: parsed.showReincarnationModal ?? false,
+          reincarnationSummary: parsed.reincarnationSummary ?? null,
+          lifetimeStats: parsed.lifetimeStats ?? {
+            totalLifespanLived: 0,
+            highestQiRealm: 0,
+            highestBodyRealm: 0,
+            totalMonstersDefeated: 0,
+            totalQiBreakthroughs: 0,
+            totalBodyBreakthroughs: 0,
+          },
+          monsterKarmaEarned: parsed.monsterKarmaEarned ?? {},
         };
       })()
-    : {
-        qi: 0,
-        spiritStones: 0,
-
-        currentQiRealmIndex: 0,
-        currentQiStage: 0,
-        currentBodyRealmIndex: 0,
-        currentBodyStage: 0,
-
-        lastUpdate: Date.now(),
-        lastActive: Date.now(),
-
-        vitality: 0,
-        spirit: 0,
-        vitalityCap: QI_REALMS[0].qiCap / 2,
-        spiritCap: QI_REALMS[0].qiCap / 2,
-        attack: 5,
-        defense: 5,
-
-        curiosity: 0,
-        tenacity: 0,
-        totalTenacityEarned: 0,
-
-        lifespan: 0,
-        maxLifespan: 100,
-
-        unlockedFeatures: [],
-        meditationTypes: [...MEDITATION_TYPES],
-        battleTechniques: [...BATTLE_TECHNIQUES],
-        activeMeditationId: null,
-        bodyExp: 0,
-        bodyLevel: 1,
-        tribulationPoints: 0,
-        defeatedMonsters: [],
-        inventory: []
-      };
+    : { ...DEFAULT_STATE, lastUpdate: Date.now(), lastActive: Date.now() };
 
   const [state, setState] = useState<PlayerState>(initialState);
 

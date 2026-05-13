@@ -24,7 +24,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ secondsAway, totalQi
     <div className="modal-overlay">
       <div className="modal-content">
         <h2>Welcome Back, Cultivator</h2>
-        <p>You meditated for **{hours}h {minutes}m** while away.</p>
+        <p>You meditated for <strong>{hours}h {minutes}m</strong> while away.</p>
 
         <div className="gain-display">
           <span>Qi Gained:</span>
@@ -32,7 +32,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ secondsAway, totalQi
         </div>
 
         {/* Display all other gained stats dynamically */}
-        {gainedStats.length > 1 && (
+        {gainedStats.length > 0 && (
           <div className="other-stats">
             {gainedStats
               .filter(stat => stat.name !== 'Qi') // Exclude Qi since it's already shown

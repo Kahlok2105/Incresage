@@ -4,6 +4,7 @@ import { calculateTenacityRequired, calculateTPRequired } from "../../utils/game
 
 /**
  * Displays the player's body cultivation progress and breakthrough options.
+ * Mirrors the structure of QiCultivationPanel for visual consistency.
  */
 export const BodyCultivationPanel: React.FC<{
   state: {
@@ -18,7 +19,7 @@ export const BodyCultivationPanel: React.FC<{
   calculateBodyBreakthroughChance: () => number;
   getBodyStageIndex: () => number;
 }> = ({ state, tryBodyBreakthrough, calculateBodyBreakthroughChance, getBodyStageIndex }) => {
-  // Add runtime safety for all numeric state properties - default to 0 if undefined
+  // Runtime safety defaults
   const tenacity = state.tenacity ?? 0;
   const tribulationPoints = state.tribulationPoints ?? 0;
   const bodyLevel = state.bodyLevel ?? 0;
@@ -29,11 +30,11 @@ export const BodyCultivationPanel: React.FC<{
   const currentBodyRealm = getCurrentRealm(BODY_REALMS, currentBodyRealmIndex, currentBodyStage);
   const bodyStageIndex = getBodyStageIndex();
   const nextBodyRealm = BODY_REALMS[bodyStageIndex + 1];
-  
+
   const requiredBodyLevel = bodyStageIndex + 1;
   const tenacityRequired = calculateTenacityRequired(bodyStageIndex);
   const tpRequired = calculateTPRequired(bodyStageIndex);
-  
+
   const currentChance = nextBodyRealm
     ? (calculateBodyBreakthroughChance() * 100).toFixed(1)
     : "0.0";
@@ -43,9 +44,11 @@ export const BodyCultivationPanel: React.FC<{
                      tribulationPoints >= tpRequired * 0.5 &&
                      bodyLevel >= requiredBodyLevel * 0.5;
 
-  const tenacityRatio = (tenacity / tenacityRequired * 100).toFixed(1);
-  const tpRatio = (tribulationPoints / tpRequired * 100).toFixed(1);
-  const levelRatio = Math.min(bodyLevel / requiredBodyLevel, 1.5);
+  // Composite readiness: lowest ratio determines overall bar fill
+  const tenacityRatio = Math.min(1, tenacity / Math.max(1, tenacityRequired));
+  const tpRatio = Math.min(1, tribulationPoints / Math.max(1, tpRequired));
+  const levelRatio = Math.min(1.5, bodyLevel / Math.max(1, requiredBodyLevel));
+  const readinessPercent = Math.min(100, Math.min(tenacityRatio, tpRatio, levelRatio) * 100);
 
   const attemptLabel = nextBodyRealm
     ? canAttempt
@@ -71,71 +74,31 @@ export const BodyCultivationPanel: React.FC<{
       color: '#f0e6d3'
     }}>
       <h2 style={{ color: '#D4A574', marginBottom: '15px' }}>Body Cultivation</h2>
-      
+
+      {/* Current Status — simplified to match Qi panel style */}
       <div style={{ marginBottom: '20px' }}>
         <p><strong>Current Realm:</strong> {currentBodyRealm.displayName}</p>
-        <p><strong>Body Stage Index:</strong> {bodyStageIndex} (Realm {currentBodyRealmIndex}, Stage {currentBodyStage})</p>
-        <p><strong>Body Level:</strong> {bodyLevel} (EXP: {bodyExp.toFixed(0)})</p>
+        <p><strong>Tenacity:</strong> {tenacity.toFixed(1)} / {tenacityRequired.toFixed(1)}</p>
+        <p><strong>Tribulation Points:</strong> {tribulationPoints.toFixed(1)} / {tpRequired.toFixed(1)}</p>
+        <p><strong>Body Level:</strong> {bodyLevel} / {requiredBodyLevel} (EXP: {bodyExp.toFixed(0)})</p>
       </div>
 
+      {/* Single Breakthrough Readiness bar — replaces the old 3 separate bars */}
       <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#D4A574', fontSize: '1rem' }}>Breakthrough Requirements</h3>
-        
-        {/* Tenacity */}
-        <div style={{ marginBottom: '10px' }}>
+        <h3 style={{ color: '#D4A574', fontSize: '1rem' }}>Breakthrough Readiness</h3>
+        <div style={{ marginBottom: '5px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-            <span>Tenacity:</span>
-            <span>{tenacity.toFixed(1)} / {tenacityRequired.toFixed(1)} ({tenacityRatio}%)</span>
+            <span>Readiness:</span>
+            <span>{readinessPercent.toFixed(1)}%</span>
           </div>
           <div style={{ width: '100%', height: '8px', background: '#3a2a1a', borderRadius: '4px' }}>
-            <div 
-              style={{ 
-              width: `${Math.min(100, (tenacity / tenacityRequired) * 100)}%`, 
-                height: '100%', 
-                background: 'linear-gradient(90deg, #ff6b35 0%, #ff8c00 100%)',
-                borderRadius: '4px'
-              }}
-            />
+            <div style={{ 
+              width: `${readinessPercent}%`, 
+              height: '100%', 
+              background: 'linear-gradient(90deg, #50c878 0%, #7ddc9e 100%)',
+              borderRadius: '4px'
+            }} />
           </div>
-        </div>
-
-        {/* Tribulation Points */}
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-            <span>Tribulation Points:</span>
-            <span>{tribulationPoints.toFixed(1)} / {tpRequired.toFixed(1)} ({tpRatio}%)</span>
-          </div>
-          <div style={{ width: '100%', height: '8px', background: '#3a2a1a', borderRadius: '4px' }}>
-            <div 
-              style={{ 
-              width: `${Math.min(100, (tribulationPoints / tpRequired) * 100)}%`, 
-                height: '100%', 
-                background: 'linear-gradient(90deg, #4a90d9 0%, #6bb5ff 100%)',
-                borderRadius: '4px'
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Body Level */}
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-            <span>Body Level:</span>
-            <span>{bodyLevel} / {requiredBodyLevel} (×{levelRatio.toFixed(2)})</span>
-          </div>
-          <div style={{ width: '100%', height: '8px', background: '#3a2a1a', borderRadius: '4px' }}>
-            <div 
-              style={{ 
-                width: `${Math.min(100, (bodyLevel / requiredBodyLevel) * 100)}%`, 
-                height: '100%', 
-                background: 'linear-gradient(90deg, #50c878 0%, #7ddc9e 100%)',
-                borderRadius: '4px'
-              }}
-            />
-          </div>
-          <p style={{ fontSize: '0.8rem', color: '#aaa', marginTop: '3px' }}>
-            Level ratio capped at 1.5x
-          </p>
         </div>
       </div>
 

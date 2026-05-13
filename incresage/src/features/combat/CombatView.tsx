@@ -8,6 +8,7 @@ interface CombatViewProps {
   playerVitalityCap: number;
   onFlee: () => void;
   onBack: () => void;
+  repeatCountdown: number;
 }
 
 export const CombatView: React.FC<CombatViewProps> = ({
@@ -16,7 +17,8 @@ export const CombatView: React.FC<CombatViewProps> = ({
   playerDefense,
   playerVitalityCap,
   onFlee,
-  onBack
+  onBack,
+  repeatCountdown
 }) => {
   // Calculate HP percentages for bars (capped at 100 to prevent overflow)
   const getPlayerHPPercent = () => {
@@ -77,6 +79,18 @@ export const CombatView: React.FC<CombatViewProps> = ({
         </div>
       )}
 
+      {/* Auto-repeat countdown */}
+      {!combatState.isActive && repeatCountdown > 0 && (
+        <div className="combat-controls">
+          <div className="battle-status repeat-status">
+            ⏳ Next battle in {repeatCountdown}s...
+          </div>
+          <button onClick={onBack} className="back-btn">
+            ← Stop & Back to List
+          </button>
+        </div>
+      )}
+
       {/* Combat Log */}
       <div className="combat-log">
         {combatState.log.slice(-5).map((entry, index) => (
@@ -86,8 +100,8 @@ export const CombatView: React.FC<CombatViewProps> = ({
         ))}
       </div>
 
-      {/* Back Button */}
-      {!combatState.isActive && (
+      {/* Back Button (only shown when combat is finished and no repeat is scheduled) */}
+      {!combatState.isActive && repeatCountdown === 0 && (
         <button onClick={onBack} className="back-btn">
           ← Back to Monster List
         </button>

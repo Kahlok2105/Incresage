@@ -46,6 +46,34 @@ export interface BattleTechnique {
   level: number;
 }
 
+/**
+ * Tracks lifetime achievements for reincarnation summary.
+ */
+export interface LifetimeStats {
+  totalLifespanLived: number;
+  highestQiRealm: number;
+  highestBodyRealm: number;
+  totalMonstersDefeated: number;
+  totalQiBreakthroughs: number;
+  totalBodyBreakthroughs: number;
+}
+
+/**
+ * Data shown in the reincarnation modal.
+ */
+export interface ReincarnationSummary {
+  lifeNumber: number;
+  lifespanLived: number;
+  highestQiRealm: number;
+  highestBodyRealm: number;
+  totalMonstersDefeated: number;
+  totalQiBreakthroughs: number;
+  totalBodyBreakthroughs: number;
+  righteousKarmaGained: number;
+  demonicKarmaGained: number;
+  memoriesGained: number;
+}
+
 export interface PlayerState {
   qi: number;
   spiritStones: number;
@@ -76,4 +104,14 @@ export interface PlayerState {
   tribulationPoints: number;
   defeatedMonsters: string[];
   inventory: InventoryItem[];
+
+  // --- Reincarnation System ---
+  righteousKarma: number;
+  demonicKarma: number;
+  memories: number;
+  reincarnationCount: number;
+  showReincarnationModal: boolean;
+  reincarnationSummary: ReincarnationSummary | null;
+  lifetimeStats: LifetimeStats;
+  monsterKarmaEarned: Record<string, number>; // monsterId -> demonic karma earned this life
 }

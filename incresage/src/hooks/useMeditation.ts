@@ -1,5 +1,6 @@
 import type { PlayerState } from "../types/game";
 import { calculateMeditationMultiplier } from "../utils/statCalc";
+import { calculateRighteousKarmaFromMeditation } from "./useReincarnation";
 
 /**
  * Calculate experience required for next meditation level
@@ -35,10 +36,23 @@ export function useMeditation(state: PlayerState, setState: React.Dispatch<React
 
     const gainMeditationExperienceTick = () => {
     if (!state.activeMeditationId) return;
-    setState(prev => ({
-      ...prev,
-      meditationTypes: gainMeditationExperience(prev, 1)
-    }));
+    setState(prev => {
+      // Find the active meditation to get its level for karma calculation
+      const active = prev.meditationTypes.find(m => m.id === prev.activeMeditationId);
+      const karmaGained = active
+        ? calculateRighteousKarmaFromMeditation(active.level, 1)
+        : 0;
+
+      return {
+        ...prev,
+        meditationTypes: gainMeditationExperience(prev, 1),
+        righteousKarma: prev.righteousKarma + karmaGained,
+        lifetimeStats: {
+          ...prev.lifetimeStats,
+          totalLifespanLived: prev.lifetimeStats.totalLifespanLived + (1 / 86400), // 1 tick = 1/86400 of a day, small contribution
+        },
+      };
+    });
   };
 
   const setActiveMeditation = (meditationId: string | null) => {

@@ -14,6 +14,7 @@ This document provides a comprehensive overview of the **Incresage** cultivation
 6. **Dual Cultivation** – Players can cultivate both Qi (spiritual) and Body (physical) paths independently, each with 6 realms × 3 stages = 18 steps.
 7. **Equipment** – Items with equipment type can be equipped/unequipped to grant stat bonuses and mental growth multipliers.
 8. **Persistence** – The entire `PlayerState` is saved to `localStorage` after each tick, with offline progress calculated on return.
+9. **Reincarnation** – Players can choose to end their current life and begin a new one, retaining karma, memories, and meditation levels while resetting cultivation progress.
 
 ---
 
@@ -65,11 +66,49 @@ export interface PlayerState {
   // Inventory System
   inventory: InventoryItem[];    // Player's collected items (consolidated type from `src/types/inventory.ts`)
 
+  // Reincarnation System
+  righteousKarma: number;        // Positive karma accumulated across all lives
+  demonicKarma: number;          // Negative karma accumulated across all lives
+  memories: number;              // Memories retained across reincarnations (for future unlocks)
+  reincarnationCount: number;    // Total number of reincarnations performed
+  showReincarnationModal: boolean; // Whether the reincarnation summary modal is visible
+  reincarnationSummary: ReincarnationSummary | null; // Data for the end-of-life summary modal
+  lifetimeStats: LifetimeStats;  // Stats tracked for the current life (used for end-of-life calculation)
+  monsterKarmaEarned: Record<string, number>; // monsterId -> demonic karma earned this life (capped per kill)
+
   // Features & Systems
   unlockedFeatures: string[];    // ["monster", "alchemy", "bodyCultivation"]
   meditationTypes: MeditationType[]; // Available meditation techniques
   battleTechniques: BattleTechnique[]; // Available battle techniques
   activeMeditationId: string | null; // Currently active meditation
+}
+```
+
+### Lifetime Stats (`src/types/game.ts`)
+```typescript
+export interface LifetimeStats {
+  totalLifespanLived: number;      // Cumulative years lived this life
+  highestQiRealm: number;          // Highest Qi realm index reached this life
+  highestBodyRealm: number;        // Highest Body realm index reached this life
+  totalMonstersDefeated: number;   // Total monsters killed this life
+  totalQiBreakthroughs: number;    // Total successful Qi breakthroughs this life
+  totalBodyBreakthroughs: number;  // Total successful Body breakthroughs this life
+}
+```
+
+### Reincarnation Summary (`src/types/game.ts`)
+```typescript
+export interface ReincarnationSummary {
+  lifeNumber: number;              // Life number (reincarnationCount + 1)
+  lifespanLived: number;           // Years lived in this life
+  highestQiRealm: number;          // Highest Qi realm reached (0-indexed)
+  highestBodyRealm: number;        // Highest Body realm reached (0-indexed)
+  totalMonstersDefeated: number;   // Monsters defeated this life
+  totalQiBreakthroughs: number;    // Successful Qi breakthroughs this life
+  totalBodyBreakthroughs: number;  // Successful Body breakthroughs this life
+  righteousKarmaGained: number;    // Righteous karma earned in this life
+  demonicKarmaGained: number;      // Demonic karma earned in this life
+  memoriesGained: number;          // Memories earned in this life
 }
 ```
 
@@ -254,6 +293,7 @@ useMeditation   → Active meditation selection, meditation leveling
   - `isMeditating`, `setMeditating` (legacy meditation toggle)
   - `totalAttack`, `totalDefense`, `totalVitality`, `totalSpirit` (base + battle bonuses)
   - `usableQi`, `totalQi`, `welcomeData`, `clearWelcomeData`
+  - Reincarnation data: `righteousKarma`, `demonicKarma`, `memories`, `reincarnationSummary`, `showReincarnationModal`, `clearReincarnation`
   - Spreads all domain hook actions: `tryBreakthrough`, `tryBodyBreakthrough`, `processMonsterVictory`, `upgradeBattleTechnique`, `useInventoryItem`, `toggleEquipItem`, etc.
 
 ### 3.2 Dual Cultivation System
@@ -516,6 +556,82 @@ spiritCap   = (100 × (qiRealm+1) × (bodyRealm+1)) + sqrt(knowledge)
   - Meditation experience gained
   - Lifespan gained
 
+### 3.12 Reincarnation System (`src/hooks/useReincarnation.ts`, `src/components/ReincarnationModal.tsx`)
+
+The reincarnation system allows players to end their current life and begin anew, retaining certain persistent resources while resetting all cultivation progress.
+
+#### Karma System
+
+Two opposing karma types are tracked across all lifetimes:
+
+**Righteous Karma** — Earned through virtuous actions:
+| Action | Formula | Description |
+|--------|---------|-------------|
+| Active Meditation | `0.01 × meditationLevel × deltaTimeSeconds` | Per tick while meditating |
+| Qi Breakthrough | `10 × (realmTier + 1)` | On successful breakthrough |
+
+**Demonic Karma** — Earned through aggressive actions:
+| Action | Formula | Description |
+|--------|---------|-------------|
+| Monster Kill | `2 × monsterDifficulty` | On victory (capped once per monster type per life) |
+| Body Breakthrough | `15 × (bodyRealmTier + 1)` | On successful body breakthrough |
+| Pill Consumption | `5` | Per pill consumed |
+
+#### Memories System
+
+Memories represent accumulated wisdom retained across lifetimes, calculated at end of life:
+```typescript
+function calculateMemoriesFromLife(summary): number {
+  let memories = 0;
+  memories += summary.highestQiRealm;          // 1 per unique qi realm reached
+  memories += summary.highestBodyRealm;        // 1 per unique body realm reached
+  memories += Math.floor(summary.totalMonstersDefeated / 10); // 1 per 10 kills
+  if (summary.highestQiRealm >= 3)  memories += 3;   // Core Formation+ bonus
+  if (summary.highestBodyRealm >= 3) memories += 3;  // Body Tempering+ bonus
+  if (summary.totalMonstersDefeated >= 100) memories += 5; // 100 kills milestone
+  return Math.max(1, Math.floor(memories));
+}
+```
+
+#### End-of-Life Karma Calculation
+
+When a reincarnation is triggered, karma is calculated from lifetime stats:
+```typescript
+// Righteous karma from life:
+righteousFromLifespan = floor(totalLifespanLived / 10)
+righteousFromTenacity = floor(totalTenacityEarned / 100)
+righteousFromRealm   = highestQiRealm × 5
+
+// Demonic karma from life:
+demonicFromKills     = floor(totalMonstersDefeated × 1.5)
+```
+
+#### Reincarnation Process
+
+Triggered from the Cultivator header panel. The system:
+
+1. **Builds a ReincarnationSummary** — Calculates final life stats, karma, and memories earned
+2. **Resets cultivation** — Qi, spirit stones, cultivation realms, combat stats, mental stats, lifespan, body EXP/level, tribulation points, defeated monsters, battle techniques, unlocked features, active meditation
+3. **Persists across lives:**
+   - Meditation technique levels (retain all experience and levels)
+   - Karma totals (`righteousKarma` + `demonicKarma`)
+   - Memories total
+   - Reincarnation count (incremented)
+   - Inventory items (all items retained)
+4. **Shows ReincarnationModal** — Displays a summary of the life just lived, including:
+   - Life summary (lifespan, highest realms, monsters defeated, breakthroughs)
+   - Rewards gained (righteous karma, demonic karma, memories)
+   - Option to "Begin Next Life"
+5. **Resets lifetime stats** — Starts tracking fresh for the new life
+
+#### ReincarnationModal UI
+
+The modal displays two sections:
+- **Life Summary** — Lifespan lived, highest Qi/Body realms, monsters defeated, number of breakthroughs
+- **Rewards Gained** — Righteous karma (☀️), Demonic karma (🌑), and Memories (💭) earned this life
+
+All karma and memories accumulate across lifetimes, serving as permanent progression. (Future use: unlocking perks, starting bonuses, or special abilities based on accumulated karma and memories.)
+
 ---
 
 ## 4. Mathematical Systems (`src/utils/gameMath.ts`)
@@ -572,13 +688,58 @@ vitalityCap = (100 × (qiRealmIndex + 1) × (bodyRealmIndex + 1)) + sqrt(totalTe
 spiritCap   = (100 × (qiRealmIndex + 1) × (bodyRealmIndex + 1)) + sqrt(knowledge)
 ```
 
+### Reincarnation Formulas (`src/hooks/useReincarnation.ts`)
+
+**Righteous Karma from Meditation (per tick):**
+```typescript
+righteousKarma = 0.01 × meditationLevel × deltaTimeSeconds
+```
+
+**Demonic Karma from Monster Kill:**
+```typescript
+demonicKarma = 2 × monsterDifficulty
+```
+
+**Righteous Karma from Qi Breakthrough:**
+```typescript
+righteousKarma = 10 × (realmTier + 1)
+```
+
+**Demonic Karma from Body Breakthrough:**
+```typescript
+demonicKarma = 15 × (bodyRealmTier + 1)
+```
+
+**Demonic Karma from Pill Consumption:**
+```typescript
+demonicKarma = 5 (per pill)
+```
+
+**Memories from Life:**
+```typescript
+memories = max(1, floor(
+  highestQiRealm +
+  highestBodyRealm +
+  floor(totalMonstersDefeated / 10) +
+  (highestQiRealm >= 3 ? 3 : 0) +
+  (highestBodyRealm >= 3 ? 3 : 0) +
+  (totalMonstersDefeated >= 100 ? 5 : 0)
+))
+```
+
+**End-of-Life Karma:**
+```typescript
+righteousKarma = floor(lifespanLived / 10) + floor(totalTenacityEarned / 100) + (highestQiRealm × 5)
+demonicKarma   = floor(totalMonstersDefeated × 1.5)
+```
+
 ---
 
 ## 5. UI Components
 
 | Component | File Path | Purpose |
 |-----------|-----------|---------|
-| **Cultivator** | `src/components/Cultivator.tsx` | Header panel: displays all current stats (vitality, spirit, attack, defense, mental stats, lifespan, spirit stones), inventory with equip/unequip, and contains the Cultivator header UI |
+| **Cultivator** | `src/components/Cultivator.tsx` | Header panel: displays all current stats (vitality, spirit, attack, defense, mental stats, lifespan, spirit stones, karma, memories), inventory with equip/unequip, and contains the Cultivator header UI |
 | **QiCultivationPanel** | `src/features/cultivation/QiCultivationPanel.tsx` | Qi cultivation progress bar, breakthrough button, success chance display |
 | **BodyCultivationPanel** | `src/features/cultivation/BodyCultivationPanel.tsx` | Body cultivation EXP/level, breakthrough requirements and attempt |
 | **MeditationPanel** | `src/features/cultivation/MeditationPanel.tsx` | Meditation technique list, activate/deactivate, current stats display |
@@ -588,10 +749,11 @@ spiritCap   = (100 × (qiRealmIndex + 1) × (bodyRealmIndex + 1)) + sqrt(knowled
 | **CombatView** | `src/features/combat/CombatView.tsx` | Active combat view with turn-based actions |
 | **InventoryPanel** | `src/features/inventory/InventoryPanel.tsx` | Player inventory display with item quantities and use/equip actions |
 | **EquipmentPanel** | `src/components/EquipmentPanel.tsx` | Equipment slots display for equipped items |
-| **PlayerStatsPanel** | `src/components/PlayerStatsPanel.tsx` | Detailed player stat breakdown |
+| **PlayerStatsPanel** | `src/components/PlayerStatsPanel.tsx` | Detailed player stat breakdown (includes karma & memories display) |
 | **AlchemyPanel** | `src/features/alchemy/AlchemyPanel.tsx` | Placeholder for future alchemy system |
 | **UnlockToast** | `src/components/UnlockToast.tsx` | Brief notification when new features are unlocked |
 | **WelcomeModal** | `src/components/WelcomeModal.tsx` | Shows offline progress summary when returning |
+| **ReincarnationModal** | `src/components/ReincarnationModal.tsx` | Shows reincarnation summary (life stats, karma, memories) with option to begin next life |
 | **Notification** | `src/components/Notification.tsx` | Individual notification item |
 | **NotificationContainer** | `src/components/NotificationContainer.tsx` | Global notification stack for success/failure messages |
 
@@ -604,6 +766,7 @@ The root component wires together:
 - Tabbed navigation system: Cultivation, Combat, Upgrades, Alchemy
 - Feature-gated components and tabs
 - Welcome modal for offline progress
+- **Reincarnation modal** shown at end of life
 - Global notification container
 - Reset Game button in top-right
 
@@ -641,13 +804,19 @@ if (newRealmIndex >= 2 && !features.includes("alchemy")) features.push("alchemy"
 if (newRealmIndex >= 3 && !features.includes("bodyCultivation")) features.push("bodyCultivation");
 ```
 
+**Reincarnation Integration:**
+- `useGameLoop` exposes `righteousKarma`, `demonicKarma`, `memories`, `reincarnationSummary`, `showReincarnationModal`, and `clearReincarnation`
+- Cultivator receives karma/memories props and displays them in the PlayerStatsPanel
+- When `showReincarnationModal` is true, App.tsx renders `ReincarnationModal` overlaid on the game
+- The modal's `onClose` calls `clearReincarnation` to dismiss
+
 ---
 
 ## 7. File Structure
 
 | File | Purpose |
 |------|---------|
-| `src/types/game.ts` | Core TypeScript interfaces (PlayerState, CultivationRealm, MeditationType, BattleTechnique) |
+| `src/types/game.ts` | Core TypeScript interfaces (PlayerState, CultivationRealm, MeditationType, BattleTechnique, LifetimeStats, ReincarnationSummary) |
 | `src/types/inventory.ts` | Inventory system types (ItemTemplate, InventoryItem, ItemDropEntry, ItemStats, ItemSlot) |
 | `src/types/combat.ts` | Combat types (Monster, MonsterDrops, CombatState) |
 | `src/constants/cultivationRealms.ts` | Qi and Body realm definitions (18 stages each with dynamic caps via gameMath) |
@@ -658,20 +827,22 @@ if (newRealmIndex >= 3 && !features.includes("bodyCultivation")) features.push("
 | `src/utils/gameMath.ts` | Mathematical utilities (clean numbers, caps, exp requirements, breakthrough costs) |
 | `src/utils/statCalc.ts` | Stat calculation functions (caps, meditation stats, battle bonuses, upgrade costs) |
 | `src/utils/inventoryUtils.ts` | Inventory utility functions (drop resolution, inventory management) |
-| `src/hooks/useGameLoop.ts` | Core game loop orchestrator (composes all domain hooks) |
-| `src/hooks/useGameState.ts` | Single source of truth with localStorage persistence |
+| `src/hooks/useGameLoop.ts` | Core game loop orchestrator (composes all domain hooks, exposes reincarnation data) |
+| `src/hooks/useGameState.ts` | Single source of truth with localStorage persistence (includes reincarnation defaults & migration) |
 | `src/hooks/useGameTick.ts` | 1Hz tick with passive gains, regen, offline detection, welcome modal |
 | `src/hooks/useBreakthrough.ts` | Qi and Body breakthrough attempt logic |
 | `src/hooks/useCombat.ts` | Combat simulation and victory processing |
 | `src/hooks/useUpgrades.ts` | Battle technique upgrade logic |
 | `src/hooks/useInventory.ts` | Inventory add/use/equip/unequip logic |
 | `src/hooks/useMeditation.ts` | Meditation selection and experience gain |
+| `src/hooks/useReincarnation.ts` | Reincarnation logic: karma calculations, memories calculation, state reset, summary building |
 | `src/hooks/useNotifications.ts` | Notification system hook |
-| `src/components/Cultivator.tsx` | Main status header with stats, inventory, equipment |
+| `src/components/Cultivator.tsx` | Main status header with stats, inventory, equipment (passes karma/memories to PlayerStatsPanel) |
 | `src/components/EquipmentPanel.tsx` | Equipped items display |
-| `src/components/PlayerStatsPanel.tsx` | Detailed stat breakdown |
+| `src/components/PlayerStatsPanel.tsx` | Detailed stat breakdown (displays righteous karma, demonic karma, memories) |
 | `src/components/UnlockToast.tsx` | Feature unlock toast notification |
 | `src/components/WelcomeModal.tsx` | Offline progress summary modal |
+| `src/components/ReincarnationModal.tsx` | Reincarnation summary modal with life stats and karma/memories rewards |
 | `src/components/Notification.tsx` | Individual notification item |
 | `src/components/NotificationContainer.tsx` | Global notification display |
 | `src/features/cultivation/QiCultivationPanel.tsx` | Qi cultivation progress and breakthrough UI |
@@ -683,7 +854,7 @@ if (newRealmIndex >= 3 && !features.includes("bodyCultivation")) features.push("
 | `src/features/inventory/InventoryPanel.tsx` | Player inventory display |
 | `src/features/upgrades/BattleTechniquesPanel.tsx` | Battle techniques UI with leveling and upgrades |
 | `src/features/alchemy/AlchemyPanel.tsx` | Placeholder for future alchemy system |
-| `src/App.tsx` | Root component composition with tabbed navigation |
+| `src/App.tsx` | Root component composition with tabbed navigation and reincarnation modal |
 | `src/App.css` | Styling for all components including tab system |
 
 ---
@@ -708,12 +879,14 @@ if (newRealmIndex >= 3 && !features.includes("bodyCultivation")) features.push("
 - Feature unlocking based on realm progression
 - Persistent save/load with localStorage
 - Reset Game button
+- **Reincarnation system with full lifecycle** (karma accumulation from meditation, breakthroughs, monster kills, and pill consumption; memories calculation; state reset preserving meditation levels, karma, memories, and inventory; ReincarnationModal with life summary and rewards display)
 
 ### 🔄 Partially Implemented
 - Alchemy system (placeholder component, mechanics TBD)
 - Pill item effects (Foundation Pill exists in constants but consumable action TBD)
 
 ### 📋 Future Considerations
+- Karma/memories spending mechanics (perks, bonuses, starting advantages in new life)
 - Spirit stone consumption for Qi breakthroughs
 - Combat system expansion (vitality/spirit usage)
 - Additional meditation techniques
@@ -736,6 +909,7 @@ Incresage is a sophisticated cultivation idle game with:
 - **Comprehensive stat system** with 8+ interconnected stats
 - **Full combat system** with turn-based battles, tribulation points, body EXP, and item drops
 - **Universal item drop system** with inventory management, stacking, and equipment
+- **Reincarnation system** with karma (righteous/demonic), memories, preserved meditation levels, and end-of-life summary
 - **Tabbed navigation** with feature-gated tabs
 - **Offline progress** with detailed return summaries
 - **Feature gating** that unlocks content as players advance
@@ -743,4 +917,4 @@ Incresage is a sophisticated cultivation idle game with:
 - **Full persistence** with automatic save/load
 - **Hook composition architecture** for clean separation of domain logic
 
-The architecture is designed for extensibility, allowing easy addition of new realms, monsters, meditation techniques, battle techniques, items, equipment, and game systems.
+The architecture is designed for extensibility, allowing easy addition of new realms, monsters, meditation techniques, battle techniques, items, equipment, game systems, and reincarnation perks.

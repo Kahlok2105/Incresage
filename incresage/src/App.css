@@ -1380,3 +1380,90 @@ button:disabled {
 .back-btn:hover:not(:disabled) {
   box-shadow: 0 12px 25px rgba(107, 114, 128, 0.25);
 }
+
+/* Repeat countdown status */
+.repeat-status {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Reincarnation Modal Styles */
+.reincarnation-modal {
+  max-width: 500px;
+  padding: 32px;
+}
+
+.reincarnation-subtitle {
+  color: #a0aec0;
+  font-style: italic;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+.reincarnation-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+}
+
+.summary-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.summary-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.9rem;
+}
+
+.summary-row span:first-child {
+  color: #a0aec0;
+}
+
+.summary-row span:last-child {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.rewards-section {
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.karma-row.righteous span:last-child {
+  color: #f0d060;
+}
+
+.karma-row.demonic span:last-child {
+  color: #c070d0;
+}
+
+.reincarnation-footer-text {
+  color: #718096;
+  font-size: 0.85rem;
+  margin: 20px 0;
+  line-height: 1.5;
+}
+
+.reincarnation-btn {
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.3);
+  font-size: 1rem;
+  padding: 14px 32px;
+  margin-top: 8px;
+}
+
+.reincarnation-btn:hover {
+  box-shadow: 0 12px 28px rgba(108, 92, 231, 0.4);
+}

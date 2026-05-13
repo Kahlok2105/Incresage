@@ -16,6 +16,9 @@ export const PlayerStatsPanel: React.FC<{
   lifespan: number;
   maxLifespan: number;
   spiritStones: number;
+  righteousKarma?: number;
+  demonicKarma?: number;
+  memories?: number;
 }> = ({
   vitality,
   vitalityCap,
@@ -29,6 +32,9 @@ export const PlayerStatsPanel: React.FC<{
   lifespan,
   maxLifespan,
   spiritStones,
+  righteousKarma = 0,
+  demonicKarma = 0,
+  memories = 0,
 }) => {
 
 const displayedVitality = Math.min(vitality, vitalityCap);
@@ -81,6 +87,21 @@ const spiritPercent = (displayedSpirit / spiritCap * 100).toFixed(1);
         <p style={{ margin: 0, textAlign: 'left' }}><strong>Tenacity:</strong> {tenacity.toFixed(1)}</p>
         <p style={{ margin: 0, textAlign: 'left' }}><strong>Spirit Stones:</strong> {spiritStones}</p>
         <p style={{ margin: 0, textAlign: 'left' }}><strong>Lifespan:</strong> {lifespan.toFixed(0)} / {maxLifespan.toFixed(0)}</p>
+      </div>
+
+      {/* Karma & Memories Display */}
+      <div style={{
+        marginTop: '12px',
+        padding: '8px',
+        borderTop: '1px solid #3a4a6e',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '4px 8px',
+        fontSize: '0.85rem'
+      }}>
+        <p style={{ margin: 0, textAlign: 'left', color: '#f0d060' }}><strong>☀️ Righteous:</strong> {righteousKarma.toFixed(0)}</p>
+        <p style={{ margin: 0, textAlign: 'left', color: '#c070d0' }}><strong>🌑 Demonic:</strong> {demonicKarma.toFixed(0)}</p>
+        <p style={{ margin: 0, textAlign: 'left', color: '#70c0f0' }}><strong>💭 Memories:</strong> {memories.toFixed(0)}</p>
       </div>
     </div>
   );

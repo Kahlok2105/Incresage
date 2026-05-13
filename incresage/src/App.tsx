@@ -11,6 +11,7 @@ import { InventoryPanel } from "./features/inventory/InventoryPanel";
 import { UnlockToast } from "./components/UnlockToast";
 import { NotificationContainer } from "./components/NotificationContainer";
 import { WelcomeModal } from "./components/WelcomeModal";
+import { ReincarnationModal } from "./components/ReincarnationModal";
 import { BattleTechniquesPanel } from "./features/upgrades/BattleTechniquesPanel";
 import { useNotifications } from "./hooks/useNotifications";
 import { useState, useEffect } from "react";
@@ -42,7 +43,14 @@ export default function App() {
     battleTechniques,
     upgradeBattleTechnique,
     useInventoryItem,
-    toggleEquipItem
+    toggleEquipItem,
+    // Reincarnation
+    righteousKarma,
+    demonicKarma,
+    memories,
+    reincarnationSummary,
+    showReincarnationModal,
+    clearReincarnation,
   } = useGameLoop();
 
   // Notification system
@@ -98,6 +106,9 @@ export default function App() {
               spiritStones={state.spiritStones}
               inventory={state.inventory.filter(item => !(item.type === 'equipment' && item.isEquipped))}
               onToggleEquip={toggleEquipItem}
+              righteousKarma={righteousKarma}
+              demonicKarma={demonicKarma}
+              memories={memories}
             />
         </header>
         <main className="game-panel">
@@ -121,15 +132,15 @@ export default function App() {
                   <div className="cultivation-section">
                     <QiCultivationPanel
                       state={state}
-                      tryBreakthrough={() => {
-                        const success = tryBreakthrough();
-                        if (success) {
-                          showSuccess("🎉 Breakthrough Successful! Welcome to the next realm!");
-                        } else {
-                          showFailure("⚠️ Breakthrough Failed! You lost 50% of your Qi.");
-                        }
-                        return { success };
-                      }}
+                        tryBreakthrough={() => {
+                          const { success } = tryBreakthrough();
+                          if (success) {
+                            showSuccess("🎉 Breakthrough Successful! Welcome to the next realm!");
+                          } else {
+                            showFailure("⚠️ Breakthrough Failed! You lost 50% of your Qi.");
+                          }
+                          return { success };
+                        }}
                       usableQi={usableQi}
                       totalQi={totalQi}
                     />
@@ -199,6 +210,14 @@ export default function App() {
             totalQiGained={welcomeData.totalQiGained}
             statsGained={welcomeData.statsGained}
             onClose={clearWelcomeData}
+          />
+        )}
+
+        {/* Reincarnation modal */}
+        {showReincarnationModal && reincarnationSummary && (
+          <ReincarnationModal
+            summary={reincarnationSummary}
+            onClose={clearReincarnation}
           />
         )}
 

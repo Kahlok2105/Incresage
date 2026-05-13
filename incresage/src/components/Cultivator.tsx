@@ -24,6 +24,9 @@ export const Cultivator: React.FC<{
   spiritStones: number;
   inventory: InventoryItem[];
   onToggleEquip?: (instanceId: string) => void;
+  righteousKarma?: number;
+  demonicKarma?: number;
+  memories?: number;
 }> = ({
   vitality,
   vitalityCap,
@@ -38,7 +41,10 @@ export const Cultivator: React.FC<{
   maxLifespan,
   spiritStones,
   inventory,
-  onToggleEquip
+  onToggleEquip,
+  righteousKarma = 0,
+  demonicKarma = 0,
+  memories = 0
 }) => {
   const [selectedTab, setSelectedTab] = useState<CultivatorTabId>("stats");
 
@@ -90,6 +96,9 @@ export const Cultivator: React.FC<{
             lifespan={lifespan}
             maxLifespan={maxLifespan}
             spiritStones={spiritStones}
+            righteousKarma={righteousKarma}
+            demonicKarma={demonicKarma}
+            memories={memories}
           />
         )}
 

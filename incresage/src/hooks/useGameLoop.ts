@@ -24,6 +24,15 @@ export function useGameLoop(tickMs: number = 1_000) {
   const upgrades = useUpgrades(state, setState);
   const inventory = useInventory(state, setState);
   const meditation = useMeditation(state, setState);
+  
+  // Clear the reincarnation modal
+  const clearReincarnation = () => {
+    setState(prev => ({
+      ...prev,
+      showReincarnationModal: false,
+      reincarnationSummary: null,
+    }));
+  };
 
   const resetGame = () => {
     resetGameState();
@@ -83,6 +92,14 @@ export function useGameLoop(tickMs: number = 1_000) {
     totalVitality: state.vitality + battleBonuses.vitality,
     totalSpirit: state.spirit + battleBonuses.spirit,
     battleTechniques: state.battleTechniques,
+
+    // Reincarnation data
+    righteousKarma: state.righteousKarma,
+    demonicKarma: state.demonicKarma,
+    memories: state.memories,
+    reincarnationSummary: state.reincarnationSummary,
+    showReincarnationModal: state.showReincarnationModal,
+    clearReincarnation,
 
     // Welcome modal
     welcomeData: gameTick.welcomeData,
